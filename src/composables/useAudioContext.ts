@@ -68,7 +68,6 @@ export const useAudioContext = () => {
         if (!steps.value[stepIndex].active || !audioContext.value || !gainNode.value || !filterNode.value) return;
 
         const frequency = Number(steps.value[stepIndex].frequency) + Number(baseFrequency.value)
-        console.log(frequency)
 
         oscillator.value = audioContext.value.createOscillator();
         oscillator.value.type = waveform.value;

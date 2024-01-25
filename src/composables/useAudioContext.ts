@@ -18,7 +18,7 @@ const clock = ref<number>(135)
 const filterNode = ref<BiquadFilterNode | null>(null);
 const gainNode = ref<GainNode | null>(null);
 const activeSynth = ref<boolean>(false)
-const baseFrequency = ref<number>(0)
+const baseFrequency = ref<number>(440)
 const waveform = ref<OscillatorType>("sawtooth")
 const oscillator = ref<OscillatorNode | null>(null)
 const steps = ref<step[]>(Array.from({ length: 16 }, (_, i) => ({
@@ -67,7 +67,7 @@ export const useAudioContext = () => {
     function playStep(stepIndex: number) {
         if (!steps.value[stepIndex].active || !audioContext.value || !gainNode.value || !filterNode.value) return;
 
-        const frequency = Number(steps.value[stepIndex].frequency) + Number(baseFrequency.value)
+        const frequency = Number(steps.value[stepIndex].frequency) + Number(baseFrequency.value) - 440
 
         oscillator.value = audioContext.value.createOscillator();
         oscillator.value.type = waveform.value;

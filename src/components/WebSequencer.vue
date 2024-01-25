@@ -1,64 +1,43 @@
 <script lang="ts" setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { useAudioContext } from '@/composables/useAudioContext'; 
 
-const audioContext = new (window.AudioContext)();
-let intervalId: number | undefined;
+const { steps, updateStepValue } = useAudioContext()
 
-const steps = ref(Array.from({ length: 16 }, () => ({
-active: false,
-frequency: 440, // Default frequency, A4 note
-})));
-
-function playStep(stepIndex: number) {
-if (!steps.value[stepIndex].active) return;
-
-const oscillator = audioContext.createOscillator();
-oscillator.frequency.value = steps.value[stepIndex].frequency;
-oscillator.type = 'sine'; // You can change the oscillator type
-
-const gainNode = audioContext.createGain();
-gainNode.gain.value = 0.5; // Adjust volume
-
-oscillator.connect(gainNode);
-gainNode.connect(audioContext.destination);
-
-oscillator.start();
-setTimeout(() => oscillator.stop(), 100); // Note duration
+const updateStep = () => {
+    updateStepValue(steps.value)
 }
 
-function startSequencer() {
-let currentStep = 0;
-intervalId = window.setInterval(() => {
-    playStep(currentStep);
-    currentStep = (currentStep + 1) % steps.value.length;
-}, 300); // Adjust tempo
-}
 
-onMounted(() => {
-startSequencer();
-});
-
-onUnmounted(() => {
-if (intervalId) clearInterval(intervalId);
-
-});
 </script>
 
 <template>
     <div class="web-sequencer">
-        <div v-for="(step, index) in steps" :key="index" class="step">
-        <input type="checkbox" v-model="step.active" />
-        <input type="range" min="100" max="1000" v-model="step.frequency" />
+        <h2>Sequencer</h2>
+        <div class="web-sequencer-steps">
+            <div class="web-sequencer-step" v-for="(step, index) in steps" :key="index">
+                <input class="web-sequencer-freq-slider" @input="updateStep()" orient="vertical" type="range" min="100" max="1000" v-model="step.frequency" />
+                <input type="checkbox" v-model="step.active" @input="updateStep()"/>
+            </div>
         </div>
     </div>
 </template>
 
 <style>
-.sequencer {
-  display: flex;
-  flex-wrap: wrap;
+.web-sequencer {
+    margin: 0 auto;
 }
-.step {
+
+.web-sequencer-steps {
+    width: 100%;
+    display: flex;
+}
+
+.web-sequencer-step {
   margin: 10px;
+}
+
+.web-sequencer-freq-slider {
+    appearance: slider-vertical;
+    display: flex;
 }
 </style>

@@ -2,13 +2,13 @@
 import { useAudioContext } from '@/composables/useAudioContext';
 
 // Use the shared AudioContext and GainNode
-const { updateOscillatorFreq, updateOscillatorWave, waveform, frequency } = useAudioContext();
+const { updateOscillatorBaseFreq, updateOscillatorWave, waveform, baseFrequency } = useAudioContext();
 
 const waves = ["sawtooth", "sine", "square", "triangle"];
 
 // Function to update frequency based on the slider input
 const updateFrequency = () => {
-  updateOscillatorFreq(frequency.value)
+  updateOscillatorBaseFreq(baseFrequency.value)
 };
 
 const updateWave = () => {
@@ -23,8 +23,8 @@ const updateWave = () => {
       <select @input="updateWave" v-model="waveform" name="waves" id="wave-select">
         <option v-for="wave in waves" :key="wave" :value="wave">{{ wave }}</option>
       </select>
-      <input type="range" min="20" max="2000" value="440" id="frequencySlider" @input="updateFrequency" v-model="frequency" />
-      <p>Frequency: {{ frequency }} Hz</p>
+      <input type="range" min="0" max="2000" id="frequencySlider" @input="updateFrequency" v-model="baseFrequency" />
+      <p>Base Frequency: {{ baseFrequency }} Hz</p>
     </div>
 </template>
 

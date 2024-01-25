@@ -2,6 +2,7 @@
   import WebVCO from './components/WebVCO.vue';
   import WebVCF from './components/WebVCF.vue';
   import WebVCA from './components/WebVCA.vue';
+  import WebClock from './components/WebClock.vue';
   import WebSequencer from './components/WebSequencer.vue';
   import { useAudioContext } from "@/composables/useAudioContext"
 
@@ -9,13 +10,19 @@
 </script>
 
 <template>
-  <!-- <div class="init-container container" v-if="!activeSynth">
+  <!-- <main class="init-container container" v-if="!activeSynth">
     <img alt="Vue logo" class="logo" src="./assets/logo.png" width="125" height="125" />
     <button class="button" @click="startAudioContext()">Activate Synth</button>
-  </div> -->
+  </main> -->
 
-  <div class="main-container container">
+  <main class="main-container container">
   <!-- <div class="main-container container" v-if="activeSynth"> -->
+    <section class="main-section1">
+       <WebClock />
+    </section>
+    <section class="main-section2">
+       <WebSequencer />
+    </section>
     <aside class="main-aside">
       <img alt="Vue logo" class="logo" src="./assets/logo.png" width="125" height="125" />
       <div class="wrapper">
@@ -23,19 +30,13 @@
         <button class="button stop-button" @click="suspendAudioContext()">Stop Synth</button>
       </div>
     </aside>
-    <main>
-      <section>
-        <WebVCO/>
-        <WebVCF/>
-        <WebVCA/>
-      </section>
-
-    </main>
-
-    <section>
-       <WebSequencer />
+    <section class="main-section3">
+      <WebVCO/>
+      <WebVCF/>
+      <WebVCA/>
     </section>
-  </div>
+
+  </main>
 </template>
 
 <style scoped>
@@ -49,18 +50,37 @@
   align-content: center;
 }
 
-.init-container {
-  justify-content: center;
-}
-
 .main-container {
   grid-template-columns: 1fr 2fr;
+  row-gap: 2rem;
+  column-gap: 2rem;
+}
+
+
+.main-section1 {
+  grid-column: 1;
+
+}
+.main-section2 {
+  grid-column: 2;
+  grid-row: 1;
 }
 
 .main-aside {
   display: grid;
+  grid-column: 1;
   justify-content: center;
   align-content: center;
+}
+
+
+.main-section3 {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.init-container {
+  justify-content: center;
 }
 
 .button {

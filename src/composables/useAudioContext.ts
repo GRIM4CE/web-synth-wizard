@@ -1,38 +1,44 @@
 import { ref } from 'vue';
 
+type step = {
+    active: boolean,
+    frequency: number, 
+    id: number
+}
+
+const midCFreqs = [261.63, 293.66974569918125, 329.63314428399565, 349.2341510465061, 392.0020805232462, 440.00745824565865, 493.8916728538229, 523.26]
+
+const getRandomFreq = () => {
+    return midCFreqs[Math.floor(Math.random() * (7 + 1))]
+}
+
 // Shared AudioContext
 const audioContext = ref<AudioContext | null>(null);
+const clock = ref<number>(135)
 const filterNode = ref<BiquadFilterNode | null>(null);
 const gainNode = ref<GainNode | null>(null);
 const activeSynth = ref<boolean>(false)
-const frequency = ref<number>(440)
+const baseFrequency = ref<number>(0)
 const waveform = ref<OscillatorType>("sawtooth")
 const oscillator = ref<OscillatorNode | null>(null)
+const steps = ref<step[]>(Array.from({ length: 16 }, (_, i) => ({
+    active: Math.random() >= 0.5,
+    frequency: getRandomFreq(), 
+    id: i
+})));
+
+let intervalId: number | undefined;
 
 export const useAudioContext = () => {
     const initSynth = () => {
         audioContext.value = new AudioContext();
         gainNode.value = audioContext.value.createGain();
         filterNode.value = audioContext.value.createBiquadFilter();
-
-        oscillator.value = audioContext.value.createOscillator();
-        oscillator.value.type = waveform.value;
-        oscillator.value.frequency.setValueAtTime(frequency.value, audioContext.value.currentTime);
-
-        oscillator.value.connect(gainNode.value);
-        gainNode.value.connect(filterNode.value);
-
-        filterNode.value.connect(audioContext.value.destination);
-
-        oscillator.value.start();
-
-        gainNode.value.gain.value = .01
     };
 
-    const updateOscillatorFreq = (freq: number) => {
+    const updateOscillatorBaseFreq = (baseFreq: number) => {
         if(oscillator.value && audioContext.value) {
-            frequency.value = freq
-            oscillator.value?.frequency.setValueAtTime(frequency.value, audioContext?.value?.currentTime);
+            baseFrequency.value = baseFreq
         }
     };
 
@@ -42,19 +48,57 @@ export const useAudioContext = () => {
             oscillator.value.type = wave
         }
     };
+
+    const updateStepValue = (updatedSteps: step[]) => {
+        steps.value = updatedSteps
+    }
     
     const startAudioContext = () => {
         if (audioContext.value && audioContext.value.state === 'suspended') {
             audioContext.value.resume();
+            startSequencer()
         } else {
             initSynth()
             activeSynth.value = true
+            startSequencer()
         }
     };
+    
+    function playStep(stepIndex: number) {
+        if (!steps.value[stepIndex].active || !audioContext.value || !gainNode.value || !filterNode.value) return;
+
+        const frequency = Number(steps.value[stepIndex].frequency) + Number(baseFrequency.value)
+        console.log(frequency)
+
+        oscillator.value = audioContext.value.createOscillator();
+        oscillator.value.type = waveform.value;
+        oscillator.value.frequency.setValueAtTime(frequency, audioContext.value.currentTime);
+
+        oscillator.value.connect(gainNode.value);
+        gainNode.value.connect(filterNode.value);
+
+        filterNode.value.connect(audioContext.value.destination);
+
+        oscillator.value.start();
+
+        gainNode.value.gain.value = 0.1
+
+        setTimeout(() => oscillator?.value?.stop(), clock.value); // Note duration
+    }
+    
+    function startSequencer() {
+        let currentStep = 0;
+        intervalId = window.setInterval(() => {
+            playStep(currentStep);
+            currentStep = (currentStep + 1) % steps.value.length;
+        }, 300); // Adjust tempo
+    }
+
 
     const suspendAudioContext = () => {
         audioContext?.value?.suspend()
+        if (intervalId) clearInterval(intervalId)
     };
     
-    return { activeSynth, audioContext, gainNode, filterNode, updateOscillatorFreq, updateOscillatorWave, waveform, frequency, startAudioContext, suspendAudioContext };
+    return { activeSynth, audioContext, clock, steps, gainNode, filterNode, updateOscillatorBaseFreq, updateOscillatorWave, waveform, baseFrequency, updateStepValue, startAudioContext, suspendAudioContext};
 }

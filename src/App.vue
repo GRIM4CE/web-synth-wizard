@@ -6,7 +6,7 @@
   import WebSequencer from './components/WebSequencer.vue';
   import { useAudioContext } from "@/composables/useAudioContext"
 
-  const { activeSynth, startAudioContext, suspendAudioContext } = useAudioContext()
+  const { startAudioContext, suspendAudioContext } = useAudioContext()
 </script>
 
 <template>

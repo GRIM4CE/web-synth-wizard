@@ -1,29 +1,36 @@
 <script lang="ts" setup>
+import {ref, watch} from "vue"
 import { useAudioContext } from '@/composables/useAudioContext';
 
 // Use the shared AudioContext and GainNode
-const { updateOscillatorBaseFreq, updateOscillatorWave, waveform, baseFrequency } = useAudioContext();
+const { oscillatorSettings } = useAudioContext();
 
 const waves = ["sawtooth", "sine", "square", "triangle"];
 
-// Function to update frequency based on the slider input
-const updateFrequency = () => {
-  updateOscillatorBaseFreq(baseFrequency.value)
-};
+const type = ref(oscillatorSettings.value.type)
+const baseFrequency = ref(oscillatorSettings.value.baseFrequency)
 
-const updateWave = () => {
-  updateOscillatorWave(waveform.value)
-};
+watch(baseFrequency, (newBaseFrequencyValue: number) => {
+  if(oscillatorSettings.value) {
+    oscillatorSettings.value.baseFrequency = newBaseFrequencyValue
+  }
+});
+
+watch(type, (newTypeValue: OscillatorType) => {
+  if(oscillatorSettings.value) {
+    oscillatorSettings.value.type = newTypeValue
+  }
+});
 </script>
 
 <template>
     <div class="web-vco">
       <h2>VCO - Voltage Controlled Oscillator</h2>
-      <p>Wave Shape: {{ waveform }}</p>
-      <select @input="updateWave" v-model="waveform" name="waves" id="wave-select">
+      <p>Wave Shape: {{ type }}</p>
+      <select v-model="type" name="waves" id="wave-select">
         <option v-for="wave in waves" :key="wave" :value="wave">{{ wave }}</option>
       </select>
-      <input type="range" min="0" max="2000" id="frequencySlider" @input="updateFrequency" v-model="baseFrequency" />
+      <input type="range" min="0" max="2000" id="frequencySlider" v-model="baseFrequency" />
       <p>Base Frequency: {{ baseFrequency }} Hz</p>
     </div>
 </template>

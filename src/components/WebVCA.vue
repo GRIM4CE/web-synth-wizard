@@ -1,9 +1,8 @@
 <script lang="ts" setup>
-import { ref, watch } from 'vue';
+import { watch } from 'vue';
 import { useAudioContext } from '@/composables/useAudioContext'; 
 
-const gain = ref<number>(0.01);
-const { gainNode } = useAudioContext();
+const { gainNode, gain } = useAudioContext();
 
 watch(gain, (newGain) => {
   if(gainNode.value) {

@@ -1,13 +1,14 @@
 <script lang="ts" setup>
+import { watch } from 'vue';
 import { useAudioContext } from '@/composables/useAudioContext'; 
 
-const { steps, updateStepValue } = useAudioContext()
+const { steps } = useAudioContext()
 
-const updateStep = () => {
-    updateStepValue(steps.value)
-}
-
-
+watch(steps, (newStepsValue) => {
+  if(steps.value) {
+    steps.value = newStepsValue
+  }
+});
 </script>
 
 <template>
@@ -15,8 +16,8 @@ const updateStep = () => {
         <h2>Sequencer</h2>
         <div class="web-sequencer-steps">
             <div class="web-sequencer-step" v-for="(step, index) in steps" :key="index">
-                <input class="web-sequencer-freq-slider" @input="updateStep()" orient="vertical" type="range" min="100" max="1000" v-model="step.frequency" />
-                <input type="checkbox" v-model="step.active" @input="updateStep()"/>
+                <input class="web-sequencer-freq-slider" orient="vertical" type="range" min="100" max="1000" v-model="step.frequency" />
+                <input type="checkbox" v-model="step.active"/>
             </div>
         </div>
     </div>

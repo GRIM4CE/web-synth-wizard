@@ -3,13 +3,14 @@ import { ref, watch, computed } from 'vue';
 import { useAudioContext } from '@/composables/useAudioContext'; 
 
 // Retrieve the shared AudioContext and gain node from a composable
-const { filterNode } = useAudioContext();
+const { filterNode, filterSettings } = useAudioContext();
 
 // Reactive filter parameters
 const filterTypes: BiquadFilterType[] = ["lowpass", 'highpass', 'bandpass', 'notch']
-const filterType = ref<BiquadFilterType>('lowpass');
-const filterFrequency = ref(440); // Default frequency in Hz
-const filterQ = ref(1); // Default Q factor
+
+const filterFrequency = ref(filterSettings.value.frequency); // Default frequency in Hz
+const filterQ = ref(filterSettings.value.q); // Default Q factor
+const filterType = ref(filterSettings.value.type) // Default Type
 
 // Watchers to update filter parameters based on user input
 watch(filterType, (newFilterType) => {

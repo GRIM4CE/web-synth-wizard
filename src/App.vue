@@ -17,24 +17,30 @@
 
   <main class="main-container container">
   <!-- <div class="main-container container" v-if="activeSynth"> -->
-    <section class="main-section1">
-       <WebClock />
-    </section>
-    <section class="main-section2">
-       <WebSequencer />
-    </section>
-    <aside class="main-aside">
+    <section class="section main-head">
       <img alt="Vue logo" class="logo" src="./assets/logo.png" width="125" height="125" />
       <div class="wrapper">
         <button class="button" @click="startAudioContext()">Activate Synth</button>
         <button class="button stop-button" @click="suspendAudioContext()">Stop Synth</button>
       </div>
-    </aside>
-    <section class="main-section3">
+    </section>
+
+    <section class="section">
+       <WebClock />
+    </section>
+    <section class="section web-sequencer">
+       <WebSequencer />
+    </section>
+    <section class="section">
       <WebVCO/>
+    </section>
+    <section class="section">
       <WebVCF/>
+    </section>
+    <section class="section">
       <WebVCA/>
     </section>
+
 
   </main>
 </template>
@@ -51,24 +57,18 @@
 }
 
 .main-container {
-  grid-template-columns: 1fr 2fr;
-  row-gap: 2rem;
+  grid-template-columns: 1fr 1fr 1fr;
+  row-gap: 1rem;
   column-gap: 2rem;
 }
 
-
-.main-section1 {
-  grid-column: 1;
-
-}
-.main-section2 {
-  grid-column: 2;
-  grid-row: 1;
+.web-sequencer {
+  grid-column: span 2;
 }
 
-.main-aside {
+.main-head {
   display: grid;
-  grid-column: 1;
+  grid-column: span 3;
   justify-content: center;
   align-content: center;
 }

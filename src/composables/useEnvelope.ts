@@ -1,21 +1,27 @@
 // useEnvelope.ts
 import { ref } from 'vue';
-import type { Envelope, VcaEnvelope } from "@/types"; // Adjust the import path as necessary
+import type { Ref } from 'vue';
+import type { VcaEnvelope, FilterEnvelope } from "@/types"; // Adjust the import path as necessary
 
 export const useEnvelope = () => {
-  const applyEnvelope = (gainNode: GainNode, audioContext: AudioContext, duration: number, envelope: VcaEnvelope) => {
+  const applyVCAEnvelope = (gainNode: GainNode, audioContext: AudioContext, envelope: Ref<VcaEnvelope>) => {
+    const gain = Number(envelope.value.gain)
+    const attack = Number(envelope.value.attack)
+    const decay = Number(envelope.value.decay)
+    const sustain = Number(envelope.value.sustain)
+    const release = Number(envelope.value.release)
+
+    const duration = attack + decay + release
+
     const now = audioContext.currentTime;
-    const { attack, decay, sustain, release, gain } = envelope;
 
     gainNode.gain.setValueAtTime(gain, now);
 
     // Use exponential ramp for attack phase if gain is not very low
     if (gain > 0.0001) {
-      gainNode.gain.exponentialRampToValueAtTime(1, now + attack);
+      gainNode.gain.exponentialRampToValueAtTime(gain, now + attack);
     } else {
-      // If gain is too low, start with a linear ramp to avoid errors with exponential ramp
-      gainNode.gain.linearRampToValueAtTime(0.0001, now + attack);
-      gainNode.gain.exponentialRampToValueAtTime(1, now + attack);
+      gainNode.gain.linearRampToValueAtTime(0, now + attack);
     }
     
     const sustainLevel = Math.max(sustain, 0.0001);
@@ -24,15 +30,47 @@ export const useEnvelope = () => {
     // Schedule the release
     gainNode.gain.setValueAtTime(sustainLevel, now + duration - release);
     gainNode.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    
+    return duration
   };
 
-  const createEnvelope = (envelopeSettings: Envelope | VcaEnvelope) => {
-    const envelope = ref<Envelope | VcaEnvelope>({
+  const applyFilterEnvelope = (filter: BiquadFilterNode, audioContext: AudioContext, envelope: Ref<FilterEnvelope>) => {
+    const attack = Number(envelope.value.attack)
+    const decay = Number(envelope.value.decay)
+    const sustain = Number(envelope.value.sustain)
+    const release = Number(envelope.value.release)
+    const peakFrequency = Number(envelope.value.peakFrequency)
+    const baseFrequency = Number(envelope.value.baseFrequency)
+
+
+    const now = audioContext.currentTime;
+
+    filter.frequency.setValueAtTime(baseFrequency, now);
+
+    // Attack: Ramp to peak frequency
+    filter.frequency.linearRampToValueAtTime(peakFrequency, now + attack);
+  
+    // Decay: Ramp down to the sustain level
+    const sustainFrequency = baseFrequency + (peakFrequency - baseFrequency) * sustain;
+    filter.frequency.linearRampToValueAtTime(sustainFrequency, now + attack + decay);
+  }
+
+  const createEnvelope = (envelopeSettings: VcaEnvelope | FilterEnvelope, type: "vca" | "filter") => {
+    const envelope = ref<VcaEnvelope | FilterEnvelope>({
         ...envelopeSettings
     });
-    return {
-        envelope,
-        applyEnvelope,
+
+    if(type === "vca") {
+      return {
+          envelope,
+          applyVCAEnvelope,
+      }
+    }
+    if(type === "filter") {
+      return {
+          envelope,
+          applyFilterEnvelope,
+      }
     }
   }
 

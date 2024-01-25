@@ -14,6 +14,7 @@ export type UseSequancerParams = {
     audioContext: Ref<AudioContext | null>,
     filterNode: Ref<BiquadFilterNode | null>,
     gainNode: Ref<GainNode | null>,
+    filterEnvelope: FilterEnvelopeObject,
     vcaEnvelope: VcaEnvelopeObject,
     oscillatorSettings: Ref<OscillatorSettings>
 }
@@ -40,16 +41,28 @@ export interface Envelope  {
     decay: number; // Time in seconds
     sustain: number; // Sustain level (0 to 1)
     release: number; // Time in seconds
-  }
+}
+
+export interface FilterEnvelope extends Envelope {
+    peakFrequency: number,
+    baseFrequency: number,
+}
 
 
 export interface VcaEnvelope extends Envelope {
     gain: number;
 }
   
-export type ApplyEnvelope = (gainNode: GainNode, audioContext: AudioContext, duration: number, envelope: Envelope | VcaEnvelope) => void
+export type ApplyVCAEnvelope = (gainNode: GainNode, audioContext: AudioContext, envelope: Ref<VcaEnvelope>) => number
+
+export type ApplyFilterEnvelope = (filter: BiquadFilterNode, audioContext: AudioContext, envelope: Ref<FilterEnvelope>) => void
 
 export type VcaEnvelopeObject = {
     envelope: Ref<VcaEnvelope>,
-    applyEnvelope: ApplyEnvelope
+    applyVCAEnvelope: ApplyVCAEnvelope
+}
+
+export type FilterEnvelopeObject = {
+    envelope: Ref<FilterEnvelope>,
+    applyFilterEnvelope: ApplyFilterEnvelope
 }

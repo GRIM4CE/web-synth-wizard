@@ -8,13 +8,14 @@ const minGain = 0.0001
 const maxGain = .1
 
 const minOutput = 0.0001
-const maxOutput = .1
+const maxOutput = .03
 
 const linearToLogarithmic = (value: number) => {
     // Ensure the value is within the range [min, max]
     const normalized = (value - minGain) / (maxGain - minGain);
     // Convert the normalized linear range [0, 1] to a logarithmic scale
     const logValue = Math.pow(maxOutput / minOutput, normalized) - 1;
+    console.log()
     return logValue;
 }
 
@@ -39,7 +40,7 @@ watch(() => vcaEnvelope.envelope.value.gain, (newGain) => {
     <h2>VCA - Voltage Controlled Amplifier</h2>
     <div class="web-vca-slider-wrapper">
       <div class="web-vca-slider">
-        <input class="veritcal-slider" orient="vertical" id="attack" type="range" min="4" max="1000" step="0.01" v-model="vcaEnvelope.envelope.value.attack" />
+        <input class="veritcal-slider" orient="vertical" id="attack" type="range" min="0.0001" max="5000" step="0.01" v-model="vcaEnvelope.envelope.value.attack" />
         <label for="attack">A</label>
       </div>
       

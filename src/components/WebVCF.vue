@@ -3,12 +3,11 @@ import { ref, watch } from 'vue';
 import { useAudioContext } from '@/composables/useAudioContext'; 
 
 // Retrieve the shared AudioContext and gain node from a composable
-const { filterNode, filterSettings } = useAudioContext();
+const { filterNode, filterSettings, filterEnvelope } = useAudioContext();
 
 // Reactive filter parameters
 const filterTypes: BiquadFilterType[] = ["lowpass", 'highpass', 'bandpass', 'notch']
 
-const filterFrequency = ref(filterSettings.value.frequency); // Default frequency in Hz
 const filterQ = ref(filterSettings.value.q); // Default Q factor
 const filterType = ref(filterSettings.value.type) // Default Type
 
@@ -18,9 +17,10 @@ watch(filterType, (newFilterType) => {
   filterNode.value.type = newFilterType
 });
 
-watch(filterFrequency, (newFilterFrequency) => {
-  if(!filterNode.value) return
-  filterNode.value.frequency.value = newFilterFrequency;
+watch(filterEnvelope.envelope, (newEnvelope) => {
+  if(filterEnvelope.envelope.value) {
+    filterEnvelope.envelope.value = newEnvelope
+  }
 });
 
 watch(filterQ, (newValue) => {
@@ -31,31 +31,48 @@ watch(filterQ, (newValue) => {
 
 
 <template>
-    <div class="web-vcf">
-        <h2>VCF - Voltage Controlled Filter</h2>
-
-        <!-- Filter Type Selector -->
-        <label for="filter-type">Filter Type: {{ filterType }}</label>
+  <div class="web-vcf">
+      <h2>VCF - Voltage Controlled Filter</h2>
+      <label for="filter-type">Filter Type: {{ filterType }}</label>
         <select id="filter-type" v-model="filterType">
             <option v-for="filterType in filterTypes" :key="filterType" :value="filterType">
               {{ filterType }}
             </option>
         </select>
-
-        <label for="filter-freq">Frequency:</label>
-        <input type="range" id="filter-freq" min="20" max="20000" v-model="filterFrequency" step="1">
         
-        <span>{{ filterFrequency }} Hz</span>
-  
-      <!-- Filter Q Factor (Resonance) Control -->
-      <div>
-        <label for="filter-q">Q Factor:</label>
-        <input type="range" id="filter-q" min="0.01" max="30" v-model="filterQ" step="0.01">
-        <span>{{ filterQ }}</span>
+      <div class="web-vcf-slider-wrapper">
+        <div class="web-vcf-slider">
+          <input class="veritcal-slider" orient="vertical" id="frequency" type="range" min="20" max="20000" v-model="filterEnvelope.envelope.value.peakFrequency" step="1">
+          <label for="frequency">Freq</label>
+        </div>
+
+        <div class="web-vcf-slider">
+          <input class="veritcal-slider" orient="vertical" id="resonance" type="range" min="0.01" max="30" v-model="filterQ" step="0.01"/>
+          <label for="resonance">Res</label>
+        </div>
+        
+        <div class="web-vcf-slider">
+          <input class="veritcal-slider" orient="vertical" id="attack" type="range" min="0.0001" max="5000" step="0.01" v-model="filterEnvelope.envelope.value.attack" />
+          <label for="attack">A</label>
+        </div>
+        
+        <div class="web-vcf-slider">
+          <input class="veritcal-slider" orient="vertical" id="decay" type="range" min="0" max="500" step="0.01" v-model="filterEnvelope.envelope.value.decay" />
+          <label for="decay">D</label>
+        </div>
+        
+        <div class="web-vcf-slider">
+          <input class="veritcal-slider" orient="vertical" id="sustain" type="range" min="0" max="1" step="0.01" v-model="filterEnvelope.envelope.value.sustain" />
+          <label for="sustain">S</label>
+        </div>
+        
+        <div class="web-vcf-slider">
+          <input class="veritcal-slider" orient="vertical" id="release" type="range" min="0" max="1000" step="0.01" v-model="filterEnvelope.envelope.value.release" />
+          <label for="release">R</label>
+        </div>
       </div>
-    </div>
+  </div>
   </template>
-  
 
   <style scoped>
   .web-vcf {
@@ -64,4 +81,14 @@ watch(filterQ, (newValue) => {
     align-items: center;
     gap: 10px;
   }
+
+
+.web-vcf-slider-wrapper {
+  display: flex;
+  column-gap: 1rem;
+}
+
+.web-vcf-slider {
+  text-align: center;
+}
   </style>

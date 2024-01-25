@@ -11,6 +11,7 @@ export const useSequencer = ({
     audioContext,
     filterNode,
     gainNode,
+    filterEnvelope,
     vcaEnvelope,
     oscillatorSettings,
 }: UseSequancerParams
@@ -66,17 +67,9 @@ export const useSequencer = ({
         gainNode.value.connect(filterNode.value);
         filterNode.value.connect(audioContext.value.destination);
 
+        const duration = vcaEnvelope.applyVCAEnvelope(gainNode.value, audioContext.value, vcaEnvelope.envelope);
 
-        const gain = Number(vcaEnvelope.envelope.value.gain)
-        const attack = Number(vcaEnvelope.envelope.value.attack)
-        const decay = Number(vcaEnvelope.envelope.value.decay)
-        const sustain = Number(vcaEnvelope.envelope.value.sustain)
-        const release = Number(vcaEnvelope.envelope.value.release)
-
-
-        const duration = attack + decay + release
-
-        vcaEnvelope.applyEnvelope(gainNode.value, audioContext.value, duration, {gain, attack, decay, sustain, release });
+        filterEnvelope.applyFilterEnvelope(filterNode.value, audioContext.value, filterEnvelope.envelope);
 
         oscillator.start(audioContext.value.currentTime);
         setTimeout(() => oscillator.stop(), duration); // Note duration

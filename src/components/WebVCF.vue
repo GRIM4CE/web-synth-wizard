@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, watch, computed } from 'vue';
+import { ref, watch } from 'vue';
 import { useAudioContext } from '@/composables/useAudioContext'; 
 
 // Retrieve the shared AudioContext and gain node from a composable

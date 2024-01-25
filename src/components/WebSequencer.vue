@@ -16,7 +16,7 @@ watch(steps, (newStepsValue) => {
         <h2>Sequencer</h2>
         <div class="web-sequencer-steps">
             <div class="web-sequencer-step" v-for="(step, index) in steps" :key="index">
-                <input class="web-sequencer-freq-slider" orient="vertical" type="range" min="100" max="1000" v-model="step.frequency" />
+                <input class="veritcal-slider" orient="vertical" type="range" min="100" max="1000" v-model="step.frequency" />
                 <input type="checkbox" v-model="step.active"/>
             </div>
         </div>
@@ -35,10 +35,5 @@ watch(steps, (newStepsValue) => {
 
 .web-sequencer-step {
   margin: 10px;
-}
-
-.web-sequencer-freq-slider {
-    appearance: slider-vertical;
-    display: flex;
 }
 </style>

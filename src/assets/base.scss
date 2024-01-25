@@ -62,3 +62,8 @@ h5,
 h6 {
   color: var(--color-heading)
 }
+
+.veritcal-slider {
+  appearance: slider-vertical;
+  display: flex;
+}

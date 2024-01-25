@@ -5,28 +5,27 @@ import { getRandomFreq } from '@/utils/generator';
 
 import type { Step, UseSequancerParams } from "../types"
 
-
-const steps = ref<Step[]>(Array.from({ length: 16 }, (_, i) => ({
-    active: Math.random() >= 0.5,
-    frequency: getRandomFreq(), 
-    id: i
-})));
-
-let intervalId: ReturnType<typeof setTimeout> | undefined;
-
-const {createOscillator} = useVCO()
-
 export const useSequencer = ({
     clock,
     timeDivision,
     audioContext,
     filterNode,
     gainNode,
+    vcaEnvelope,
     oscillatorSettings,
 }: UseSequancerParams
 ) => {
-    let currentStep = 0;
+    const steps = ref<Step[]>(Array.from({ length: 16 }, (_, i) => ({
+        active: Math.random() >= 0.5,
+        frequency: getRandomFreq(), 
+        id: i
+    })));
     
+    let currentStep = 0;
+    let intervalId: ReturnType<typeof setTimeout> | undefined;
+
+    const {createOscillator} = useVCO()
+
     function calculateNoteInterval() {
         // Calculate the duration of one beat in milliseconds
         const beatDurationMs = 60000 / clock.value;
@@ -62,12 +61,25 @@ export const useSequencer = ({
         const stepFrequency = steps.value[stepIndex].frequency
         const oscillator = createOscillator({audioContext: audioContext.value, oscillatorSettings: oscillatorSettings.value, stepFrequency})
 
+
         oscillator.connect(gainNode.value);
         gainNode.value.connect(filterNode.value);
         filterNode.value.connect(audioContext.value.destination);
 
+
+        const gain = Number(vcaEnvelope.envelope.value.gain)
+        const attack = Number(vcaEnvelope.envelope.value.attack)
+        const decay = Number(vcaEnvelope.envelope.value.decay)
+        const sustain = Number(vcaEnvelope.envelope.value.sustain)
+        const release = Number(vcaEnvelope.envelope.value.release)
+
+
+        const duration = attack + decay + release
+
+        vcaEnvelope.applyEnvelope(gainNode.value, audioContext.value, duration, {gain, attack, decay, sustain, release });
+
         oscillator.start(audioContext.value.currentTime);
-        setTimeout(() => oscillator.stop(), 50); // Note duration
+        setTimeout(() => oscillator.stop(), duration); // Note duration
     }
 
 

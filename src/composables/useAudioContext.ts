@@ -2,8 +2,8 @@ import { useAudioContextManager } from './useAudioContextManager';
 import { useSequencer  } from './useSequencer';
 import type { Step } from "@/types"
 
-const { initSynth, clock, timeDivision, audioContext, gainNode, filterNode, oscillatorSettings, filterSettings, gain } = useAudioContextManager()
-const { steps, startSequencer, stopSequencer } = useSequencer({clock, timeDivision, audioContext, gainNode, filterNode, oscillatorSettings })
+const { initSynth, clock, timeDivision, audioContext, gainNode, filterNode, oscillatorSettings, filterSettings, vcaEnvelope } = useAudioContextManager()
+const { steps, startSequencer, stopSequencer } = useSequencer({clock, timeDivision, audioContext, gainNode, filterNode, vcaEnvelope, oscillatorSettings })
 
 
 export const useAudioContext = () => {
@@ -23,5 +23,5 @@ export const useAudioContext = () => {
         stopSequencer()
     };
     
-    return { clock, timeDivision, audioContext, gainNode, filterNode, oscillatorSettings, filterSettings, steps, gain, updateStepValue, startAudioContext, suspendAudioContext};
+    return { clock, timeDivision, audioContext, gainNode, filterNode, oscillatorSettings, filterSettings, vcaEnvelope, steps, updateStepValue, startAudioContext, suspendAudioContext};
 }

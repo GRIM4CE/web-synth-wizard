@@ -1,8 +1,9 @@
 <script lang="ts" setup>
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch, computed } from 'vue';
+import { useAudioContext } from '@/composables/useAudioContext'; 
 
-const audioContext = new AudioContext();
-const filterNode = ref(audioContext.createBiquadFilter());
+// Retrieve the shared AudioContext and gain node from a composable
+const { filterNode } = useAudioContext();
 
 // Reactive filter parameters
 const filterTypes: BiquadFilterType[] = ["lowpass", 'highpass', 'bandpass', 'notch']
@@ -10,47 +11,40 @@ const filterType = ref<BiquadFilterType>('lowpass');
 const filterFrequency = ref(440); // Default frequency in Hz
 const filterQ = ref(1); // Default Q factor
 
-const updateFilterType = () => {
-
-}
-
 // Watchers to update filter parameters based on user input
-watch(filterType, (newValue) => {
-  filterNode.value.type = newValue;
+watch(filterType, (newFilterType) => {
+  if(!filterNode.value) return
+  filterNode.value.type = newFilterType
 });
 
-watch(filterFrequency, (newValue) => {
-  filterNode.value.frequency.value = newValue;
+watch(filterFrequency, (newFilterFrequency) => {
+  if(!filterNode.value) return
+  filterNode.value.frequency.value = newFilterFrequency;
 });
 
 watch(filterQ, (newValue) => {
+  if(!filterNode.value) return
   filterNode.value.Q.value = newValue;
-});
-
-onMounted(() => {
-  // Example setup for the filter node
-  // Connect your source to filterNode.value and then to the destination or next node in your audio processing graph
-  // source.connect(filterNode.value).connect(audioContext.destination);
 });
 </script>
 
 
 <template>
     <div class="web-vcf">
-      <h2>VCF - Voltage Controlled Filter</h2>
-      
-      <!-- Filter Type Selector -->
-      <label for="filter-type">Filter Type: {{ filterType }}</label>
-      <select id="filter-type" @input="updateFilterType" v-model="filterType">
-        <option v-for="type in filterTypes" :key="type" :value="type">{{ type }}</option>
-      </select>
-  
-      <!-- Filter Frequency Control -->
-      <div>
+        <h2>VCF - Voltage Controlled Filter</h2>
+
+        <!-- Filter Type Selector -->
+        <label for="filter-type">Filter Type: {{ filterType }}</label>
+        <select id="filter-type" v-model="filterType">
+            <option v-for="filterType in filterTypes" :key="filterType" :value="filterType">
+              {{ filterType }}
+            </option>
+        </select>
+
         <label for="filter-freq">Frequency:</label>
         <input type="range" id="filter-freq" min="20" max="20000" v-model="filterFrequency" step="1">
+        
         <span>{{ filterFrequency }} Hz</span>
-      </div>
   
       <!-- Filter Q Factor (Resonance) Control -->
       <div>

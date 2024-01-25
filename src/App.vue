@@ -2,6 +2,7 @@
   import WebVCO from './components/WebVCO.vue';
   import WebVCF from './components/WebVCF.vue';
   import WebVCA from './components/WebVCA.vue';
+  import WebSequencer from './components/WebSequencer.vue';
   import { useAudioContext } from "@/composables/useAudioContext"
 
   const { activeSynth, startAudioContext, suspendAudioContext } = useAudioContext()
@@ -23,10 +24,17 @@
       </div>
     </aside>
     <main>
-      <WebVCO/>
-      <WebVCF/>
-      <WebVCA/>
+      <section>
+        <WebVCO/>
+        <WebVCF/>
+        <WebVCA/>
+      </section>
+
     </main>
+
+    <section>
+       <WebSequencer />
+    </section>
   </div>
 </template>
 
@@ -35,7 +43,7 @@
   display: grid;
   max-width: 1024px;
   width: 100%;
-  height: 100vh;
+  min-height: 100vh;
   margin: 0 auto;
   padding: 2rem;
   align-content: center;

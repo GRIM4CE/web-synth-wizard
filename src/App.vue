@@ -1,5 +1,6 @@
 <script setup lang="ts">
   import WebVCO from './components/WebVCO.vue';
+  import WebVCF from './components/WebVCF.vue';
   import WebVCA from './components/WebVCA.vue';
   import { useAudioContext } from "@/composables/useAudioContext"
 
@@ -7,13 +8,13 @@
 </script>
 
 <template>
-  <div class="init-container container" v-if="!activeSynth">
+  <!-- <div class="init-container container" v-if="!activeSynth">
     <img alt="Vue logo" class="logo" src="./assets/logo.png" width="125" height="125" />
     <button class="button" @click="startAudioContext()">Activate Synth</button>
-  </div>
+  </div> -->
 
-  <!-- <div class="main-container container"> -->
-  <div class="main-container container" v-if="activeSynth">
+  <div class="main-container container">
+  <!-- <div class="main-container container" v-if="activeSynth"> -->
     <aside class="main-aside">
       <img alt="Vue logo" class="logo" src="./assets/logo.png" width="125" height="125" />
       <div class="wrapper">
@@ -23,6 +24,7 @@
     </aside>
     <main>
       <WebVCO/>
+      <WebVCF/>
       <WebVCA/>
     </main>
   </div>

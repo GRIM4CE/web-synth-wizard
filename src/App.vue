@@ -18,7 +18,7 @@
   <main class="main-container container">
   <!-- <div class="main-container container" v-if="activeSynth"> -->
     <section class="section main-head">
-      <img alt="Vue logo" class="logo" src="./assets/logo.png" width="125" height="125" />
+      <img alt="Web Synth Wizard logo" class="logo" src="./assets/logo.png" width="125" height="125" />
       <div class="wrapper">
         <button class="button" @click="startAudioContext()">Activate Synth</button>
         <button class="button stop-button" @click="suspendAudioContext()">Stop Synth</button>

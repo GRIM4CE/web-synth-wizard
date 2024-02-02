@@ -20,7 +20,9 @@
   <!-- <div class="main-container container" v-if="activeSynth"> -->
     <section class="section main-head">
       <img alt="Web Synth Wizard logo" class="logo" src="./assets/logo.png" width="125" height="125" />
-      <div class="wrapper">
+      <p class="main-head-callout-text">This project is currently under active development to enhance its features and improve user experience. For the best experience, I'd recommend using Firefox, as it provides the most stable and compatible environment for our project's functionalities. While other browsers may also work, you might encounter some differences in performance or layout.</p>
+
+      <div class="utility-button-wrapper">
         <button class="button" @click="startAudioContext()">Activate Synth</button>
         <button class="button stop-button" @click="suspendAudioContext()">Stop Synth</button>
       </div>
@@ -90,6 +92,7 @@
 
 .main-head {
   display: grid;
+  text-align: center;
   justify-content: center;
   align-content: center;
 
@@ -97,6 +100,23 @@
     grid-column: span 3;
   }
 }
+
+.logo {
+  display: block;
+  margin: 0 auto 0rem;
+}
+
+.main-head-callout-text { 
+  margin-bottom: 2rem;
+  font-size: 14px;
+}
+
+.utility-button-wrapper {
+  display: flex;
+  column-gap: 1rem;
+  justify-content: center;
+}
+
 
 
 .main-section3 {
@@ -131,15 +151,5 @@
 
 .stop-button:hover {
   background-color: transparent;
-}
-
-.wrapper {
-  display: flex;
-  column-gap: 1rem;
-}
-
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
 }
 </style>

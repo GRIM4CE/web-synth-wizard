@@ -51,7 +51,7 @@ const updateValue = (event: Event) => {
     .d-slider {
         -webkit-appearance: none;
         appearance: none; 
-        width: 100%;
+        width: 150px;
 
         cursor: pointer;
         outline: none;
@@ -71,8 +71,10 @@ const updateValue = (event: Event) => {
         &[orient='vertical'] {
             appearance: slider-vertical;
             height: 150px;
+            width: 100%;
 
             &::-webkit-slider-runnable-track {
+                height: 100%;
                 width: $slider-width;
             }
 

@@ -43,7 +43,7 @@ watch(filterQ, (newValue) => {
         
       <div class="web-vcf-slider-wrapper">
         <div class="web-vcf-slider">
-          <DSlider orient="vertical" id="frequency" type="range" :min="20" :max="20000" v-model="filterEnvelope.envelope.value.peakFrequency" step="1" />
+          <DSlider orient="vertical" id="frequency" type="range" :min="20" :max="20000" v-model="filterEnvelope.envelope.value.frequency" step="1" />
           <label for="frequency">Freq</label>
         </div>
 
@@ -53,7 +53,7 @@ watch(filterQ, (newValue) => {
         </div>
         
         <div class="web-vcf-slider">
-          <DSlider orient="vertical" id="attack" type="range" :min="0.0001" :max="5000" step="0.01" v-model="filterEnvelope.envelope.value.attack" />
+          <DSlider orient="vertical" id="attack" type="range" :min="0.0001" :max="5" step="0.001" v-model="filterEnvelope.envelope.value.attack" />
           <label for="attack">A</label>
         </div>
         

@@ -39,20 +39,25 @@ export const useEnvelope = () => {
     const decay = Number(envelope.value.decay)
     const sustain = Number(envelope.value.sustain)
     const release = Number(envelope.value.release)
-    const peakFrequency = Number(envelope.value.peakFrequency)
+    const frequency = Number(envelope.value.frequency)
     const baseFrequency = Number(envelope.value.baseFrequency)
 
+    const duration = attack + decay + release
 
     const now = audioContext.currentTime;
 
     filter.frequency.setValueAtTime(baseFrequency, now);
 
     // Attack: Ramp to peak frequency
-    filter.frequency.linearRampToValueAtTime(peakFrequency, now + attack);
+    filter.frequency.exponentialRampToValueAtTime(frequency, now + attack);
   
     // Decay: Ramp down to the sustain level
-    const sustainFrequency = baseFrequency + (peakFrequency - baseFrequency) * sustain;
-    filter.frequency.linearRampToValueAtTime(sustainFrequency, now + attack + decay);
+    const sustainFrequency = baseFrequency + (frequency - baseFrequency) * sustain;
+    filter.frequency.exponentialRampToValueAtTime(sustainFrequency, now + attack + decay);
+
+     // Schedule the release
+     filter.frequency.setValueAtTime(sustainFrequency, now + duration - release);
+     filter.frequency.exponentialRampToValueAtTime(0.0001, now + duration);
   }
 
   const createEnvelope = (envelopeSettings: VcaEnvelope | FilterEnvelope, type: "vca" | "filter") => {

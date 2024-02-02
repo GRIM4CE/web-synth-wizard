@@ -16,18 +16,18 @@ const filterSettings = ref<FilterSettings>({ frequency: 200, q: 4, type: 'lowpas
 const vcaEnvelope = createEnvelope({
     attack: 30,
     decay: 100,
-    sustain: 0.1,
+    sustain: 0.5,
     release: 50,
     gain: .01,
 }, "vca") as unknown as VcaEnvelopeObject
 
 const filterEnvelope = createEnvelope({
-    attack: 0.1, // Time in seconds for the cutoff frequency to reach its peak
+    attack: 0.2, // Time in seconds for the cutoff frequency to reach its peak
     decay: 0.2, // Time in seconds for the frequency to fall to the sustain level
     sustain: 0.3, // Sustain level as a percentage of the peak frequency
     release: 0.2, // Time in seconds for the frequency to fall back to its initial value after note off
-    peakFrequency: 2000, // Peak cutoff frequency in Hz
-    baseFrequency: 0, // Base cutoff frequency in Hz, could be your initial value
+    frequency: filterSettings.value.frequency, // Peak cutoff frequency in Hz
+    baseFrequency: 20, // Base cutoff frequency in Hz, could be your initial value
 }, "filter") as unknown as FilterEnvelopeObject
 
 export const useAudioContextManager = () => {

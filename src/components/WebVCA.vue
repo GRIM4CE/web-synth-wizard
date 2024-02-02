@@ -41,22 +41,22 @@ watch(() => vcaEnvelope.envelope.value.gain, (newGain) => {
     <h2>VCA - Voltage Controlled Amplifier</h2>
     <div class="web-vca-slider-wrapper">
       <div class="web-vca-slider">
-        <DSlider orient="vertical" id="attack" type="range" min="0.0001" max="5000" step="0.01" v-model="vcaEnvelope.envelope.value.attack" />
+        <DSlider orient="vertical" id="attack" type="range" :min="0.0001" :max="5000" step="0.01" v-model="vcaEnvelope.envelope.value.attack" />
         <label for="attack">A</label>
       </div>
       
       <div class="web-vca-slider">
-        <DSlider orient="vertical" id="decay" min="0" max="500" step="0.01" v-model="vcaEnvelope.envelope.value.decay" />
+        <DSlider orient="vertical" id="decay" :min="0" :max="500" step="0.01" v-model="vcaEnvelope.envelope.value.decay" />
         <label for="decay">D</label>
       </div>
       
       <div class="web-vca-slider">
-        <DSlider orient="vertical" id="sustain" min="0" max="1" step="0.01" v-model="vcaEnvelope.envelope.value.sustain" />
+        <DSlider orient="vertical" id="sustain" :min="0" :max="1" step="0.01" v-model="vcaEnvelope.envelope.value.sustain" />
         <label for="sustain">S</label>
       </div>
       
       <div class="web-vca-slider">
-        <DSlider orient="vertical" id="release" min="0" max="1000" step="0.01" v-model="vcaEnvelope.envelope.value.release" />
+        <DSlider orient="vertical" id="release" :min="0" :max="1000" step="0.01" v-model="vcaEnvelope.envelope.value.release" />
         <label for="release">R</label>
       </div>
 

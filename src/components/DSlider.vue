@@ -1,7 +1,11 @@
 <script lang="ts" setup>
-import { defineProps, useAttrs } from 'vue';
+import { defineProps, useAttrs, ref, watchEffect } from 'vue';
 
-defineProps<{ modelValue?: number }>();
+const props = defineProps<{ 
+    modelValue: number,
+    min:  number,
+    max: number,
+}>();
 
 const emit = defineEmits(['update:modelValue']);
 const attrs = useAttrs();
@@ -10,11 +14,27 @@ const updateValue = (event: Event) => {
   const input = event.target as HTMLInputElement;
   emit('update:modelValue', Number(input.value));
 };
+
+// Computed style for the slider track
+const valuePercentage = ref(((props.modelValue - props.min) / (props.max - props.min)) * 100);
+
+// Watch for changes in modelValue and update valuePercentage accordingly
+watchEffect(() => {
+  valuePercentage.value = ((props.modelValue - props.min) / (props.max - props.min)) * 100;
+});
+
 </script>
 
 
 <template>
-    <input class="d-slider" type="range" v-bind="attrs" :value="modelValue" @input="updateValue"/>
+    <input 
+        class="d-slider" 
+        type="range" 
+        v-bind="attrs" 
+        :value="modelValue" 
+        :style="{ '--value-percentage': `${valuePercentage}%` }"
+        @input="updateValue"
+    />
 </template>
 
 <style lang="scss" scoped>
@@ -32,7 +52,7 @@ const updateValue = (event: Event) => {
         appearance: none;
         background: transparent;
         border: none;
-
+        box-sizing: border-box;
 
         &:focus {
             outline: none;
@@ -41,7 +61,6 @@ const updateValue = (event: Event) => {
         // Style for WebKit/Blink browsers like Chrome and Safari
         &::-webkit-slider-runnable-track {
             border-radius: 30px;
-            background: linear-gradient(to right, $slider-color 0%, $slider-color var(--value-percentage), $slider-inactive-color var(--value-percentage), $slider-inactive-color 100%);
         }
 
         &::-webkit-slider-thumb {
@@ -114,20 +133,26 @@ const updateValue = (event: Event) => {
 
         &::-webkit-slider-runnable-track {
             height: $slider-width;
+            width: 100%;
+            background: linear-gradient(to right, $slider-color 0%, $slider-color var(--value-percentage), $slider-inactive-color var(--value-percentage), $slider-inactive-color 100%);
         }
 
         &::-moz-range-track {
             height: $slider-width;
+            width: 100%;
         }
 
         &::-moz-range-progress {
             height: $slider-width;
+            width: 100%;
         }
 
         &[orient='vertical'] {
             &::-webkit-slider-runnable-track {
-                height: 100%;
-                width: $slider-width;
+                width: 200px;
+                height: $slider-width;
+                transform: rotate(-90deg);
+                transform-origin: bottom left;
             }
 
             &::-moz-range-track {
@@ -142,18 +167,4 @@ const updateValue = (event: Event) => {
         }
 
     }
-
-// 
-// 
-
-
-//   // Firefox: Style for the progress (active value)
-
-
-//   // IE and Edge: Style for the track
-
-
-//   // IE and Edge: Style for the thumb
-
-
-// </style>
+</style>

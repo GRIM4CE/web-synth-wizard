@@ -1,10 +1,8 @@
 <script lang="ts" setup>
-import { defineProps, useAttrs, ref, watchEffect } from 'vue';
+import { defineProps, useAttrs } from 'vue';
 
-const props = defineProps<{ 
+defineProps<{ 
     modelValue: number,
-    min:  number,
-    max: number,
 }>();
 
 const emit = defineEmits(['update:modelValue']);
@@ -14,15 +12,6 @@ const updateValue = (event: Event) => {
   const input = event.target as HTMLInputElement;
   emit('update:modelValue', Number(input.value));
 };
-
-// Computed style for the slider track
-const valuePercentage = ref(((props.modelValue - props.min) / (props.max - props.min)) * 100);
-
-// Watch for changes in modelValue and update valuePercentage accordingly
-watchEffect(() => {
-  valuePercentage.value = ((props.modelValue - props.min) / (props.max - props.min)) * 100;
-});
-
 </script>
 
 
@@ -32,7 +21,6 @@ watchEffect(() => {
         type="range" 
         v-bind="attrs" 
         :value="modelValue" 
-        :style="{ '--value-percentage': `${valuePercentage}%` }"
         @input="updateValue"
     />
 </template>
@@ -56,6 +44,25 @@ watchEffect(() => {
 
         &:focus {
             outline: none;
+        }
+
+        &[orient='vertical'] {
+            appearance: slider-vertical;
+
+            &::-webkit-slider-runnable-track {
+                height: 100%;
+                width: $slider-width;
+            }
+
+            &::-moz-range-track {
+                height: 100%;
+                width: $slider-width;
+            }
+
+            &::-moz-range-progress {
+                height: 100%;
+                width: $slider-width;
+            }
         }
 
         // Style for WebKit/Blink browsers like Chrome and Safari
@@ -146,25 +153,5 @@ watchEffect(() => {
             height: $slider-width;
             width: 100%;
         }
-
-        &[orient='vertical'] {
-            &::-webkit-slider-runnable-track {
-                width: 200px;
-                height: $slider-width;
-                transform: rotate(-90deg);
-                transform-origin: bottom left;
-            }
-
-            &::-moz-range-track {
-                height: 100%;
-                width: $slider-width;
-            }
-
-            &::-moz-range-progress {
-                height: 100%;
-                width: $slider-width;
-            }
-        }
-
     }
 </style>

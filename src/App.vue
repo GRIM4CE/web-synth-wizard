@@ -48,7 +48,6 @@
 
 <style scoped lang="scss">
 .container { 
-  display: grid;
   max-width: 1024px;
   width: 100%;
   min-height: 100vh;
@@ -62,7 +61,7 @@
   display: none;
 
   @include md {
-    display: block;
+    display: grid;
     grid-template-columns: 1fr 1fr 1fr;
     column-gap: 2rem;
   }

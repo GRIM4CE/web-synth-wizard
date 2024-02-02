@@ -1,12 +1,23 @@
 <script lang="ts" setup>
-import { defineProps, useAttrs } from 'vue';
+import { defineProps, useAttrs, ref, watchEffect } from 'vue';
 
-defineProps<{ 
+const props = defineProps<{ 
     modelValue: number,
+    min: number
+    max: number
 }>();
 
 const emit = defineEmits(['update:modelValue']);
 const attrs = useAttrs();
+
+// Computed style for the slider track
+const valuePercentage = ref(((props.modelValue - props.min) / (props.max - props.min)) * 100);
+
+// Watch for changes in modelValue and update valuePercentage accordingly
+watchEffect(() => {
+  valuePercentage.value = ((props.modelValue - props.min) / (props.max - props.min)) * 100;
+});
+
 
 const updateValue = (event: Event) => {
   const input = event.target as HTMLInputElement;
@@ -19,7 +30,10 @@ const updateValue = (event: Event) => {
     <input 
         class="d-slider" 
         type="range" 
+        :min="min"
+        :max="max"
         v-bind="attrs" 
+        :style="{ '--value-percentage': `${valuePercentage}%` }"
         :value="modelValue" 
         @input="updateValue"
     />
@@ -30,14 +44,22 @@ const updateValue = (event: Event) => {
     $slider-inactive-color: var(--grey-soft); 
     $knob-color: var(--green); 
     $knob-border: var(--white); 
-    $knob-size: 15px;
+    $knob-size: 20px;
     $slider-width: 10px;
     $shadow: var(--black);
 
     .d-slider {
-        width: 100%;
         -webkit-appearance: none;
-        appearance: none;
+        appearance: none; 
+        width: 100%;
+
+        cursor: pointer;
+        outline: none;
+
+        border-radius: 15px;
+        height: 6px;
+        background: #ccc;
+
         background: transparent;
         border: none;
         box-sizing: border-box;
@@ -48,9 +70,9 @@ const updateValue = (event: Event) => {
 
         &[orient='vertical'] {
             appearance: slider-vertical;
+            height: 150px;
 
             &::-webkit-slider-runnable-track {
-                height: 100%;
                 width: $slider-width;
             }
 
@@ -67,7 +89,10 @@ const updateValue = (event: Event) => {
 
         // Style for WebKit/Blink browsers like Chrome and Safari
         &::-webkit-slider-runnable-track {
-            border-radius: 30px;
+            height: $slider-width;
+            background: $slider-inactive-color;
+            border-radius: 16px;
+            background: linear-gradient(to right, $slider-color 0%, $slider-color var(--value-percentage), $slider-inactive-color var(--value-percentage), $slider-inactive-color 100%);
         }
 
         &::-webkit-slider-thumb {
@@ -75,7 +100,7 @@ const updateValue = (event: Event) => {
             appearance: none;
             background: $knob-color; 
             border: 3px solid $knob-border; 
-            margin-top: calc(($knob-size / 2) * -1); // Half of the extra height to center the thumb
+            margin-top: calc(($slider-width / 2) * -1); // Half of the extra height to center the thumb
             border-radius: 50%;
             height: $knob-size; 
             width: $knob-size;
@@ -102,8 +127,8 @@ const updateValue = (event: Event) => {
             background: $knob-color; 
             border: 3px solid $knob-border; 
             border-radius: 50%; 
-            height: $knob-size;
-            width: $knob-size; 
+            height: calc($knob-size - 4px);
+            width: calc($knob-size - 4px); 
             cursor: pointer;
             box-shadow: 0px 0px 10px rgba($shadow, 0.5);
         }
@@ -136,12 +161,6 @@ const updateValue = (event: Event) => {
             width: $knob-size;
             cursor: pointer;
             box-shadow: 0px 0px 10px rgba($shadow, 0.5);
-        }
-
-        &::-webkit-slider-runnable-track {
-            height: $slider-width;
-            width: 100%;
-            background: linear-gradient(to right, $slider-color 0%, $slider-color var(--value-percentage), $slider-inactive-color var(--value-percentage), $slider-inactive-color 100%);
         }
 
         &::-moz-range-track {

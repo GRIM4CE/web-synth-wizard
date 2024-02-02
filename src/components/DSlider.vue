@@ -40,9 +40,9 @@ const updateValue = (event: Event) => {
 </template>
 
 <style lang="scss" scoped>
-    $slider-color: var(--green); 
+    $slider-color: var(--blue); 
     $slider-inactive-color: var(--grey-soft); 
-    $knob-color: var(--green); 
+    $knob-color: var(--blue); 
     $knob-border: var(--white); 
     $knob-size: 20px;
     $slider-width: 10px;

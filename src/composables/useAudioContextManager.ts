@@ -1,5 +1,5 @@
 import { ref } from 'vue';
-import type { OscillatorSettings, FilterSettings, TimeDivision, VcaEnvelopeObject, FilterEnvelopeObject } from "@/types"
+import type { OscillatorSettings, FilterSettings, TimeDivision, VcaEnvelopeObject, FilterEnvelopeObject, MusicalKey, Octaves } from "@/types"
 import { useEnvelope } from "./useEnvelope"; 
 
 const { createEnvelope } = useEnvelope();
@@ -12,6 +12,9 @@ const filterNode = ref<BiquadFilterNode | null>(null);
 const gainNode = ref<GainNode | null>(null);
 const oscillatorSettings = ref<OscillatorSettings>({ baseFrequency: 440, type: "sawtooth" });
 const filterSettings = ref<FilterSettings>({ frequency: 2500, q: 1, type: 'lowpass' })
+const selectedMusicalKey = ref<MusicalKey>("A")
+const selectedOctave = ref<Octaves>(4)
+const quantize = ref(true)
 
 const vcaEnvelope = createEnvelope({
     attack: 30,
@@ -38,5 +41,5 @@ export const useAudioContextManager = () => {
         filterNode.value = audioContext.value.createBiquadFilter();
     };
 
-    return { initSynth, clock, timeDivision, audioContext, gainNode, vcaEnvelope, oscillatorSettings, filterNode, filterSettings, filterEnvelope };
+    return { initSynth, clock, timeDivision, audioContext, gainNode, vcaEnvelope, oscillatorSettings, filterNode, filterSettings, filterEnvelope, selectedMusicalKey, selectedOctave, quantize };
 }

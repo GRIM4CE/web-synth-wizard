@@ -10,10 +10,11 @@
 </script>
 
 <template>
-  <!-- <main class="init-container container" v-if="!activeSynth">
-    <img alt="Vue logo" class="logo" src="./assets/logo.png" width="125" height="125" />
-    <button class="button" @click="startAudioContext()">Activate Synth</button>
-  </main> -->
+  <div class="main-container-mobile">
+    <img alt="Web Synth Wizard logo"  class="logo" src="./assets/logo.png" width="125" height="125" />
+    <h2>Web Synth Wizard</h2>
+    <p>Due to limited support for AudioContext on mobile this application is intended to be used on desktop computer.</p>
+  </div>
 
   <main class="main-container container">
   <!-- <div class="main-container container" v-if="activeSynth"> -->
@@ -58,10 +59,23 @@
 
 .main-container {
   row-gap: 1rem;
+  display: none;
 
   @include md {
+    display: block;
     grid-template-columns: 1fr 1fr 1fr;
     column-gap: 2rem;
+  }
+}
+
+.main-container-mobile {
+  display: grid;
+  height: calc(100vh - 4rem);
+  text-align: center;
+  align-content: center;
+  padding: 2rem;
+  @include md {
+    display: none;
   }
 }
 

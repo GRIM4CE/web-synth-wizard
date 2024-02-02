@@ -17,6 +17,9 @@ export type UseSequancerParams = {
     filterEnvelope: FilterEnvelopeObject,
     vcaEnvelope: VcaEnvelopeObject,
     oscillatorSettings: Ref<OscillatorSettings>
+    selectedMusicalKey: Ref<MusicalKey>
+    selectedOctave: Ref<Octaves>
+    quantize: Ref<Boolean>
 }
 
 export type OscillatorSettings = {
@@ -33,7 +36,10 @@ export type FilterSettings = {
 export type CreateOscillatorParams ={
     audioContext: AudioContext, 
     oscillatorSettings: OscillatorSettings,
-    stepFrequency?: number
+    stepFrequency?: number,
+    selectedMusicalKey: Ref<MusicalKey>
+    selectedOctave: Ref<Octaves>
+    quantize: Ref<Boolean>
 }
 
 export interface Envelope  {
@@ -66,3 +72,6 @@ export type FilterEnvelopeObject = {
     envelope: Ref<FilterEnvelope>,
     applyFilterEnvelope: ApplyFilterEnvelope
 }
+
+export type MusicalKey = "A" | "A#" | "B" | "C" | "D" | "D#" | "E" | "F" | "F#" | "G" | "G#"
+export type Octaves = 1 | 2 | 3 | 4 | 5 | 6 | 7

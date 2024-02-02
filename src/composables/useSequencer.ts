@@ -14,6 +14,9 @@ export const useSequencer = ({
     filterEnvelope,
     vcaEnvelope,
     oscillatorSettings,
+    selectedMusicalKey, 
+    selectedOctave,
+    quantize
 }: UseSequancerParams
 ) => {
     const steps = ref<Step[]>(Array.from({ length: 16 }, (_, i) => ({
@@ -60,7 +63,15 @@ export const useSequencer = ({
     function playStep(stepIndex: number) {
         if (!steps.value[stepIndex].active || !audioContext.value || !gainNode.value || !filterNode.value) return;
         const stepFrequency = steps.value[stepIndex].frequency
-        const oscillator = createOscillator({audioContext: audioContext.value, oscillatorSettings: oscillatorSettings.value, stepFrequency})
+
+        const oscillator = createOscillator({ 
+            audioContext: audioContext.value, 
+            oscillatorSettings: oscillatorSettings.value, 
+            stepFrequency,
+            selectedMusicalKey, 
+            selectedOctave,
+            quantize
+        })
 
 
         oscillator.connect(gainNode.value);

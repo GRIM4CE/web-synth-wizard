@@ -45,7 +45,7 @@ export interface Envelope  {
 
 export interface FilterEnvelope extends Envelope {
     frequency: number,
-    baseFrequency: number,
+    maxFrequency: number,
 }
 
 

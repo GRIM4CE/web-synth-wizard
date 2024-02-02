@@ -71,6 +71,10 @@
   }
 }
 
+.section {
+  text-align: center;
+}
+
 .main-head {
   display: grid;
   justify-content: center;

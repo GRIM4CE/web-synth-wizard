@@ -40,19 +40,19 @@ export const useEnvelope = () => {
     const sustain = Number(envelope.value.sustain)
     const release = Number(envelope.value.release)
     const frequency = Number(envelope.value.frequency)
-    const baseFrequency = Number(envelope.value.baseFrequency)
+    const maxFrequency = Number(envelope.value.maxFrequency)
 
     const duration = attack + decay + release
 
     const now = audioContext.currentTime;
 
-    filter.frequency.setValueAtTime(baseFrequency, now);
+    filter.frequency.setValueAtTime(frequency, now);
 
     // Attack: Ramp to peak frequency
-    filter.frequency.exponentialRampToValueAtTime(frequency, now + attack);
+    filter.frequency.exponentialRampToValueAtTime(maxFrequency, now + attack);
   
     // Decay: Ramp down to the sustain level
-    const sustainFrequency = baseFrequency + (frequency - baseFrequency) * sustain;
+    const sustainFrequency = frequency + (maxFrequency - frequency) * sustain;
     filter.frequency.exponentialRampToValueAtTime(sustainFrequency, now + attack + decay);
 
      // Schedule the release

@@ -48,27 +48,27 @@ watch(filterQ, (newValue) => {
         </div>
 
         <div class="web-vcf-slider">
-          <DSlider orient="vertical" id="resonance" type="range" :min="0.01" :max="30" v-model="filterQ" step="0.01"/>
+          <DSlider orient="vertical" id="resonance" type="range" :min="0.0001" :max="30" v-model="filterQ" step="0.01"/>
           <label for="resonance">Res</label>
         </div>
         
         <div class="web-vcf-slider">
-          <DSlider orient="vertical" id="attack" type="range" :min="0.0001" :max="5" step="0.001" v-model="filterEnvelope.envelope.value.attack" />
+          <DSlider orient="vertical" id="attack" type="range" :min="0.0001" :max="5000" step="0.001" v-model="filterEnvelope.envelope.value.attack" />
           <label for="attack">A</label>
         </div>
         
         <div class="web-vcf-slider">
-          <DSlider orient="vertical" id="decay" type="range" :min="0" :max="500" step="0.01" v-model="filterEnvelope.envelope.value.decay" />
+          <DSlider orient="vertical" id="decay" type="range" :min="0.0001" :max="500" step="0.01" v-model="filterEnvelope.envelope.value.decay" />
           <label for="decay">D</label>
         </div>
         
         <div class="web-vcf-slider">
-          <DSlider orient="vertical" id="sustain" type="range" :min="0" :max="1" step="0.01" v-model="filterEnvelope.envelope.value.sustain" />
+          <DSlider orient="vertical" id="sustain" type="range" :min="0.0001" :max="1" step="0.01" v-model="filterEnvelope.envelope.value.sustain" />
           <label for="sustain">S</label>
         </div>
         
         <div class="web-vcf-slider">
-          <DSlider orient="vertical" id="release" type="range" :min="0" :max="1000" step="0.01" v-model="filterEnvelope.envelope.value.release" />
+          <DSlider orient="vertical" id="release" type="range" :min="0.0001" :max="1000" step="0.01" v-model="filterEnvelope.envelope.value.release" />
           <label for="release">R</label>
         </div>
       </div>

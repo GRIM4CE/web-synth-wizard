@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import {ref, watch} from "vue"
 import { useAudioContext } from '@/composables/useAudioContext';
+import DSlider from './DSlider.vue'
 
 // Use the shared AudioContext and GainNode
 const { oscillatorSettings } = useAudioContext();
@@ -30,7 +31,7 @@ watch(type, (newTypeValue: OscillatorType) => {
       <select v-model="type" name="waves" id="wave-select">
         <option v-for="wave in waves" :key="wave" :value="wave">{{ wave }}</option>
       </select>
-      <input type="range" min="0" max="2000" id="frequencySlider" v-model="baseFrequency" />
+      <DSlider type="range" min="0" max="2000" id="frequencySlider" v-model="baseFrequency" />
       <p>Base Frequency: {{ baseFrequency }} Hz</p>
     </div>
 </template>

@@ -1,6 +1,8 @@
 <script lang="ts" setup>
 import { watch } from 'vue';
 import { useAudioContext } from '@/composables/useAudioContext'; 
+import DSlider from './DSlider.vue'
+import DCheckbox from './DCheckbox.vue'
 
 const { steps } = useAudioContext()
 
@@ -16,24 +18,32 @@ watch(steps, (newStepsValue) => {
         <h2>Sequencer</h2>
         <div class="web-sequencer-steps">
             <div class="web-sequencer-step" v-for="(step, index) in steps" :key="index">
-                <input class="veritcal-slider" orient="vertical" type="range" min="100" max="1000" v-model="step.frequency" />
-                <input type="checkbox" v-model="step.active"/>
+                <DSlider orient="vertical" min="100" max="1000" v-model="step.frequency"/>
+                <DCheckbox type="checkbox" :id="`check-id-${index}`" v-model="step.active"/>
             </div>
         </div>
     </div>
 </template>
 
-<style>
+<style scoped lang="scss">
 .web-sequencer {
     margin: 0 auto;
 }
 
 .web-sequencer-steps {
     width: 100%;
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+
+    @include sm {
+      grid-template-columns: repeat(16, 1fr);
+    }
 }
 
 .web-sequencer-step {
   margin: 10px;
+  display: grid;
+  row-gap: .5rem;
+  justify-content: center;
 }
 </style>

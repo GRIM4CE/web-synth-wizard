@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { watch } from 'vue';
 import { useAudioContext } from '@/composables/useAudioContext'; 
+import DSlider from './DSlider.vue'
 
 const { clock, timeDivision} = useAudioContext();
 
@@ -30,7 +31,7 @@ const timeDivisions = [
 <template>
   <div class="web-clock">
     <h2>Clock</h2>
-    <input type="range" min="20" max="400" step="1" v-model="clock" />
+    <DSlider type="range" min="20" max="400" step="1" v-model="clock" />
     <p>BPM: {{ clock }}</p>
 
     <h2>Time Division</h2>

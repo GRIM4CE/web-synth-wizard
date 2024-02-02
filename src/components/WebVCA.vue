@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { watch } from 'vue';
 import { useAudioContext } from '@/composables/useAudioContext'; 
+import DSlider from './DSlider.vue'
 
 const { vcaEnvelope } = useAudioContext();
 
@@ -40,27 +41,27 @@ watch(() => vcaEnvelope.envelope.value.gain, (newGain) => {
     <h2>VCA - Voltage Controlled Amplifier</h2>
     <div class="web-vca-slider-wrapper">
       <div class="web-vca-slider">
-        <input class="veritcal-slider" orient="vertical" id="attack" type="range" min="0.0001" max="5000" step="0.01" v-model="vcaEnvelope.envelope.value.attack" />
+        <DSlider orient="vertical" id="attack" type="range" min="0.0001" max="5000" step="0.01" v-model="vcaEnvelope.envelope.value.attack" />
         <label for="attack">A</label>
       </div>
       
       <div class="web-vca-slider">
-        <input class="veritcal-slider" orient="vertical" id="decay" type="range" min="0" max="500" step="0.01" v-model="vcaEnvelope.envelope.value.decay" />
+        <DSlider orient="vertical" id="decay" min="0" max="500" step="0.01" v-model="vcaEnvelope.envelope.value.decay" />
         <label for="decay">D</label>
       </div>
       
       <div class="web-vca-slider">
-        <input class="veritcal-slider" orient="vertical" id="sustain" type="range" min="0" max="1" step="0.01" v-model="vcaEnvelope.envelope.value.sustain" />
+        <DSlider orient="vertical" id="sustain" min="0" max="1" step="0.01" v-model="vcaEnvelope.envelope.value.sustain" />
         <label for="sustain">S</label>
       </div>
       
       <div class="web-vca-slider">
-        <input class="veritcal-slider" orient="vertical" id="release" type="range" min="0" max="1000" step="0.01" v-model="vcaEnvelope.envelope.value.release" />
+        <DSlider orient="vertical" id="release" min="0" max="1000" step="0.01" v-model="vcaEnvelope.envelope.value.release" />
         <label for="release">R</label>
       </div>
 
       <div class="web-vca-slider">
-        <input class="veritcal-slider" orient="vertical" id="gain" type="range" :min="minGain" :max="maxGain" step="0.001" v-model="vcaEnvelope.envelope.value.gain" />
+        <DSlider orient="vertical" id="gain" :min="minGain" :max="maxGain" step="0.001" v-model="vcaEnvelope.envelope.value.gain" />
         <label for="gain">Gain</label>
       </div>
     </div>
@@ -80,9 +81,6 @@ watch(() => vcaEnvelope.envelope.value.gain, (newGain) => {
 .web-vca-slider-wrapper {
   display: flex;
   column-gap: 1rem;
-}
-
-.web-vca-slider {
   text-align: center;
 }
 </style>

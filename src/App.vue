@@ -45,7 +45,7 @@
   </main>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .container { 
   display: grid;
   max-width: 1024px;
@@ -57,26 +57,36 @@
 }
 
 .main-container {
-  grid-template-columns: 1fr 1fr 1fr;
   row-gap: 1rem;
-  column-gap: 2rem;
+
+  @include md {
+    grid-template-columns: 1fr 1fr 1fr;
+    column-gap: 2rem;
+  }
 }
 
 .web-sequencer {
-  grid-column: span 2;
+  @include md {
+    grid-column: span 2;
+  }
 }
 
 .main-head {
   display: grid;
-  grid-column: span 3;
   justify-content: center;
   align-content: center;
+
+  @include md {
+    grid-column: span 3;
+  }
 }
 
 
 .main-section3 {
-  grid-column: 2;
-  grid-row: 2;
+  @include md {
+    grid-column: 2;
+    grid-row: 2;
+  }
 }
 
 .init-container {

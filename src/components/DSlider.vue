@@ -76,6 +76,8 @@ const updateValue = (event: Event) => {
             &::-webkit-slider-runnable-track {
                 height: 100%;
                 width: $slider-width;
+                border-radius: 16px;
+                background: linear-gradient(to top, $slider-color 0%, $slider-color var(--value-percentage), $slider-inactive-color var(--value-percentage), $slider-inactive-color 100%);
             }
 
             &::-moz-range-track {
@@ -88,6 +90,24 @@ const updateValue = (event: Event) => {
                 width: $slider-width;
             }
         }
+
+
+
+        &[orient='vertical']::-webkit-slider-thumb {
+            -webkit-appearance: none; 
+            appearance: none;
+            background: $knob-color; 
+            border: 3px solid $knob-border; 
+            margin-left: calc(($slider-width / 2) * -1); // Half of the extra height to center the thumb
+            border-radius: 50%;
+            height: $knob-size; 
+            width: $knob-size;
+            cursor: pointer; 
+            position: relative; // For z-index to work
+            z-index: 2; // Raise thumb above the track
+            box-shadow: 0px 0px 10px rgba($shadow, 0.5);
+        }
+
 
         // Style for WebKit/Blink browsers like Chrome and Safari
         &::-webkit-slider-runnable-track {

@@ -14,7 +14,7 @@
   <div class="main-disabled-container" v-if="!canUseAudioContext">
     <img alt="Web Synth Wizard logo"  class="logo" src="./assets/logo.png" width="125" height="125" />
     <h2>Web Synth Wizard</h2>
-    <p>Due to limited support for AudioContext on mobile this application is intended to be used on desktop computer.</p>
+    <p>Unfortunately, your current device or browser does not support Web Audio API's AudioContext, a crucial feature which the application heavily relies on. We recommend using a desktop computer with Firefox for the best experience. We apologize for the inconvenience and are looking forward to having you create with Web Synth Wizard on a compatible setup.</p>
   </div>
 
   <main class="main-container container" v-else>

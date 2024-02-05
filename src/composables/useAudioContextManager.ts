@@ -1,5 +1,5 @@
 import { ref } from 'vue';
-import type { OscillatorSettings, FilterSettings, TimeDivision, VcaEnvelopeObject, FilterEnvelopeObject, MusicalKey, Octaves } from "@/types"
+import type { AudioContextType, OscillatorSettings, FilterSettings, TimeDivision, VcaEnvelopeObject, FilterEnvelopeObject, MusicalKey, Octaves } from "@/types"
 import { useEnvelope } from "./useEnvelope"; 
 
 const { createEnvelope } = useEnvelope();
@@ -7,7 +7,7 @@ const { createEnvelope } = useEnvelope();
 
 const clock = ref<number>(135)
 const timeDivision = ref<TimeDivision>(4)
-const audioContext = ref<AudioContext | null>(null);
+const audioContext = ref<AudioContextType | null>(null);
 const filterNode = ref<BiquadFilterNode | null>(null);
 const gainNode = ref<GainNode | null>(null);
 const oscillatorSettings = ref<OscillatorSettings>({ baseFrequency: 440, type: "sawtooth" });
@@ -36,7 +36,7 @@ const filterEnvelope = createEnvelope({
 export const useAudioContextManager = () => {
 
     const initSynth = () => {
-        audioContext.value = new AudioContext();
+        audioContext.value = new (AudioContext || webkitAudioContext)();
         gainNode.value = audioContext.value.createGain();
         filterNode.value = audioContext.value.createBiquadFilter();
     };

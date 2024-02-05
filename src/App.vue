@@ -7,16 +7,17 @@
   import { useAudioContext } from "@/composables/useAudioContext"
 
   const { startAudioContext, suspendAudioContext } = useAudioContext()
+  const canUseAudioContext = ('AudioContext' in window) || ('webkitAudioContext' in window)
 </script>
 
 <template>
-  <div class="main-container-mobile">
+  <div class="main-disabled-container" v-if="!canUseAudioContext">
     <img alt="Web Synth Wizard logo"  class="logo" src="./assets/logo.png" width="125" height="125" />
     <h2>Web Synth Wizard</h2>
     <p>Due to limited support for AudioContext on mobile this application is intended to be used on desktop computer.</p>
   </div>
 
-  <main class="main-container container">
+  <main class="main-container container" v-else>
   <!-- <div class="main-container container" v-if="activeSynth"> -->
     <section class="section main-head">
       <img alt="Web Synth Wizard logo" class="logo" src="./assets/logo.png" width="125" height="125" />
@@ -69,7 +70,7 @@
   }
 }
 
-.main-container-mobile {
+.main-disabled-container {
   display: grid;
   height: calc(100vh - 4rem);
   text-align: center;

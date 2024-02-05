@@ -7,7 +7,7 @@
   import { useAudioContext } from "@/composables/useAudioContext"
 
   const { startAudioContext, suspendAudioContext } = useAudioContext()
-  const canUseAudioContext = ('AudioContext' in window) || ('webkitAudioContext' in window)
+  const canUseAudioContext = 'AudioContext' in window
 </script>
 
 <template>

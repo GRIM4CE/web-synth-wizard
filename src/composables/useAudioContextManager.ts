@@ -36,11 +36,7 @@ const filterEnvelope = createEnvelope({
 export const useAudioContextManager = () => {
 
     const initSynth = () => {
-        if('webkitAudioContext' in window) {
-            audioContext.value = new (window as any).webkitAudioContext();
-        } else {
-            audioContext.value = new AudioContext()
-        }
+        audioContext.value = new AudioContext()
         gainNode.value = audioContext.value.createGain();
         filterNode.value = audioContext.value.createBiquadFilter();
     };

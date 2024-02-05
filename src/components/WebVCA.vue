@@ -16,7 +16,6 @@ const linearToLogarithmic = (value: number) => {
     const normalized = (value - minGain) / (maxGain - minGain);
     // Convert the normalized linear range [0, 1] to a logarithmic scale
     const logValue = Math.pow(maxOutput / minOutput, normalized) - 1;
-    console.log()
     return logValue;
 }
 
@@ -27,10 +26,7 @@ watch(vcaEnvelope.envelope, (newEnvelope) => {
 });
 
 watch(() => vcaEnvelope.envelope.value.gain, (newGain) => {
-  const logGain = linearToLogarithmic(newGain);
-  // Now apply logGain to the actual GainNode or wherever it's needed
-  console.log("Logarithmic gain value:", logGain);
-  // Example: gainNode.value.gain.value = logGain;
+  linearToLogarithmic(newGain);
 }, { immediate: true });
 
 

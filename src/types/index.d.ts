@@ -1,5 +1,7 @@
 import type { Ref } from 'vue';
 
+export type AudioContextType = AudioContext | (typeof AudioContext & typeof webkitAudioContext);
+
 export type Step = {
     active: boolean,
     frequency: number, 

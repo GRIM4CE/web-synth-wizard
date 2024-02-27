@@ -6,14 +6,14 @@ const { createEnvelope } = useEnvelope();
 
 
 const clock = ref<number>(135)
-const timeDivision = ref<TimeDivision>(4)
+const timeDivision = ref<TimeDivision>(2)
 const audioContext = ref<AudioContextType | null>(null);
 const filterNode = ref<BiquadFilterNode | null>(null);
 const gainNode = ref<GainNode | null>(null);
-const oscillatorSettings = ref<OscillatorSettings>({ baseFrequency: 440, type: "sawtooth" });
+const oscillatorSettings = ref<OscillatorSettings>({ baseFrequency: 147, type: "square" });
 const filterSettings = ref<FilterSettings>({ frequency: 2500, q: 1, type: 'lowpass' })
-const selectedMusicalKey = ref<MusicalKey>("A")
-const selectedOctave = ref<Octaves>(4)
+const selectedMusicalKey = ref<MusicalKey>("D")
+const selectedOctave = ref<Octaves>(3)
 const quantize = ref(true)
 
 const vcaEnvelope = createEnvelope({

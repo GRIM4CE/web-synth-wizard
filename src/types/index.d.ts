@@ -4,9 +4,11 @@ export type AudioContextType = AudioContext | (typeof AudioContext & typeof webk
 
 export type Step = {
     active: boolean,
-    frequency: number, 
+    note: number, 
     id: number,
 }
+
+export type MusicalKey = 'C' | 'C#' | 'D' | 'D#' | 'E' | 'F' | 'F#' | 'G' | 'G#' | 'A' | 'A#' | 'B'
 
 export type TimeDivision = 1 | 2 | 4 | 8 | 16 | 32
 
@@ -38,7 +40,7 @@ export type FilterSettings = {
 export type CreateOscillatorParams ={
     audioContext: AudioContext, 
     oscillatorSettings: OscillatorSettings,
-    stepFrequency?: number,
+    stepNote: number,
     selectedMusicalKey: Ref<MusicalKey>
     selectedOctave: Ref<Octaves>
     quantize: Ref<Boolean>

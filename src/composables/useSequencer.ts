@@ -1,7 +1,7 @@
 import { ref, watch } from 'vue';
 
 import { useVCO } from "./useVCO"
-import { getRandomFreq } from '@/utils/generator';
+import { getRandomNote } from '@/utils/generator';
 
 import type { Step, UseSequancerParams } from "../types"
 
@@ -21,7 +21,7 @@ export const useSequencer = ({
 ) => {
     const steps = ref<Step[]>(Array.from({ length: 16 }, (_, i) => ({
         active: Math.random() >= 0.5,
-        frequency: getRandomFreq(), 
+        note: getRandomNote(), 
         id: i
     })));
     
@@ -62,12 +62,12 @@ export const useSequencer = ({
 
     function playStep(stepIndex: number) {
         if (!steps.value[stepIndex].active || !audioContext.value || !gainNode.value || !filterNode.value) return;
-        const stepFrequency = steps.value[stepIndex].frequency
+        const stepNote = steps.value[stepIndex].note
 
         const oscillator = createOscillator({ 
             audioContext: audioContext.value, 
             oscillatorSettings: oscillatorSettings.value, 
-            stepFrequency,
+            stepNote,
             selectedMusicalKey, 
             selectedOctave,
             quantize

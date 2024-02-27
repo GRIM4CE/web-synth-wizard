@@ -11,14 +11,13 @@
 </script>
 
 <template>
-  <div class="main-disabled-container" v-if="!canUseAudioContext">
+  <main class="main-disabled-container" v-if="!canUseAudioContext">
     <img alt="Web Synth Wizard logo"  class="logo" src="./assets/logo.png" width="125" height="125" />
     <h2>Web Synth Wizard</h2>
     <p>Unfortunately, your current device or browser does not support Web Audio API's AudioContext, a crucial feature which the application heavily relies on. We recommend using a desktop computer with Firefox for the best experience. We apologize for the inconvenience and are looking forward to having you create with Web Synth Wizard on a compatible setup.</p>
-  </div>
+  </main>
 
   <main class="main-container container" v-else>
-  <!-- <div class="main-container container" v-if="activeSynth"> -->
     <section class="section main-head">
       <img alt="Web Synth Wizard logo" class="logo" src="./assets/logo.png" width="125" height="125" />
       <p class="main-head-callout-text">This project is currently under active development to enhance its features and improve user experience. For the best experience, I'd recommend using Firefox, as it provides the most stable and compatible environment for our project's functionalities. While other browsers may also work, you might encounter some differences in performance or layout.</p>
@@ -44,8 +43,6 @@
     <section class="section">
       <WebVCA/>
     </section>
-
-
   </main>
 </template>
 
@@ -61,7 +58,6 @@
 
 .main-container {
   row-gap: 1rem;
-  display: none;
 
   @include md {
     display: grid;
@@ -76,9 +72,6 @@
   text-align: center;
   align-content: center;
   padding: 2rem;
-  @include md {
-    display: none;
-  }
 }
 
 .web-sequencer {

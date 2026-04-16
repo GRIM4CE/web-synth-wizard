@@ -28,8 +28,8 @@ export const useAudioContext = () => {
         return frequency
     }
     
-    const startAudioContext = () => {
-        initSynth()
+    const startAudioContext = async () => {
+        await initSynth()
         startSequencer()
     };
 

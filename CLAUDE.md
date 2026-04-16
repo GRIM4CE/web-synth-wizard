@@ -51,7 +51,7 @@ All audio state is declared at module scope in `useAudioContextManager.ts` (sing
 
 ### Envelope Values
 
-ADSR envelope parameters (attack, decay, sustain, release) are stored in **milliseconds** and must be converted to seconds when passed to Web Audio API scheduling methods (`setValueAtTime`, `exponentialRampToValueAtTime`).
+ADSR envelope timing parameters (`attack`, `decay`, `release`) are stored in **milliseconds** everywhere: type definitions (`src/types/index.d.ts`), default values (`useAudioContextManager.ts`), and UI slider ranges. They must be divided by 1000 to convert to seconds before passing to Web Audio API scheduling methods (`setValueAtTime`, `exponentialRampToValueAtTime`). This conversion happens in `useEnvelope.ts`.
 
 ## Code Style
 

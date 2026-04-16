@@ -47,10 +47,10 @@ export type CreateOscillatorParams ={
 }
 
 export interface Envelope  {
-    attack: number; // Time in seconds
-    decay: number; // Time in seconds
+    attack: number; // Time in milliseconds
+    decay: number; // Time in milliseconds
     sustain: number; // Sustain level (0 to 1)
-    release: number; // Time in seconds
+    release: number; // Time in milliseconds
 }
 
 export interface FilterEnvelope extends Envelope {

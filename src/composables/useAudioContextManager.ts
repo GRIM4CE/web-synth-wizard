@@ -25,22 +25,27 @@ const vcaEnvelope = createEnvelope({
 }, "vca") as unknown as VcaEnvelopeObject
 
 const filterEnvelope = createEnvelope({
-    attack: 0.2, // Time in seconds for the cutoff frequency to reach its peak
-    decay: 100, // Time in seconds for the frequency to fall to the sustain level
+    attack: 0.2, // Time in ms for the cutoff frequency to reach its peak
+    decay: 100, // Time in ms for the frequency to fall to the sustain level
     sustain: 0.5, // Sustain level as a percentage of the peak frequency
-    release: 0.2, // Time in seconds for the frequency to fall back to its initial value after note off
+    release: 0.2, // Time in ms for the frequency to fall back to its initial value after note off
     frequency: filterSettings.value.frequency, // Peak cutoff frequency in Hz
-    maxFrequency: 20000, // Base cutoff frequency in Hz, could be your initial value
+    maxFrequency: 20000, // Max cutoff frequency in Hz
 }, "filter") as unknown as FilterEnvelopeObject
 
 export const useAudioContextManager = () => {
 
-    const initSynth = () => {
+    const initSynth = async () => {
         if (audioContext.value) {
-            audioContext.value.close()
+            const existingAudioContext = audioContext.value
+            try {
+                await existingAudioContext.close()
+            } catch (error) {
+                console.error('Failed to close existing AudioContext', error)
+            }
         }
         audioContext.value = new AudioContext()
-        audioContext.value.resume()
+        await audioContext.value.resume()
         gainNode.value = audioContext.value.createGain();
         filterNode.value = audioContext.value.createBiquadFilter();
     };

@@ -36,7 +36,11 @@ const filterEnvelope = createEnvelope({
 export const useAudioContextManager = () => {
 
     const initSynth = () => {
+        if (audioContext.value) {
+            audioContext.value.close()
+        }
         audioContext.value = new AudioContext()
+        audioContext.value.resume()
         gainNode.value = audioContext.value.createGain();
         filterNode.value = audioContext.value.createBiquadFilter();
     };

@@ -34,9 +34,7 @@ export const useAudioContext = () => {
     };
 
     const suspendAudioContext = () => {
-        audioContext?.value?.close().then(() => {
-            audioContext.value = null
-        })
+        audioContext?.value?.suspend()
         stopSequencer()
     };
     

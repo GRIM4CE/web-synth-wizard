@@ -77,5 +77,4 @@ export type FilterEnvelopeObject = {
     applyFilterEnvelope: ApplyFilterEnvelope
 }
 
-export type MusicalKey = "A" | "A#" | "B" | "C" | "D" | "D#" | "E" | "F" | "F#" | "G" | "G#"
 export type Octaves = 1 | 2 | 3 | 4 | 5 | 6 | 7

@@ -1,173 +1,120 @@
-# AWS Deployment Guide
+# AWS Amplify Deployment Guide
 
-Web Synth Wizard is a static Vue 3 SPA. The recommended AWS architecture is
-**S3 + CloudFront**, giving you global CDN delivery, automatic HTTPS, and
-sub-$1/month hosting costs for typical traffic.
+Web Synth Wizard is a static Vue 3 SPA deployed on **AWS Amplify Hosting**,
+which provides automatic builds, a global CDN, HTTPS, and PR preview
+environments — all with minimal configuration.
 
 ## Architecture
 
 ```
-┌──────────┐     ┌──────────────┐     ┌────────────┐
-│  GitHub   │────▶│  CloudFront  │────▶│  S3 Bucket │
-│  Actions  │     │  (CDN/HTTPS) │     │  (origin)  │
-└──────────┘     └──────────────┘     └────────────┘
-     │                                       ▲
-     └───── S3 sync + cache invalidation ────┘
+┌──────────┐     ┌──────────────────┐     ┌────────────┐
+│  GitHub   │────▶│  AWS Amplify     │────▶│ CloudFront │────▶ Users
+│  (push)   │     │  (build & host)  │     │  (CDN)     │
+└──────────┘     └──────────────────┘     └────────────┘
 ```
 
-- **S3** stores the built static files (HTML, JS, CSS, assets)
-- **CloudFront** serves them globally with HTTP/2 + HTTP/3, Brotli/gzip
-  compression, and HTTPS
-- **GitHub Actions** builds, tests, and deploys on every push to `main`
-- **OIDC federation** — no long-lived AWS keys stored in GitHub
+- **Amplify** watches the GitHub repo, builds on push, and deploys the `dist/` output
+- **CloudFront** (managed by Amplify) delivers assets globally with HTTPS
+- **GitHub Actions** runs CI checks (lint, type-check, tests) independently
 
 ## Prerequisites
 
-- An AWS account with permissions to create S3, CloudFront, IAM, and
-  (optionally) ACM resources
-- [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) installed locally
-- Node.js 20+
+- An AWS account
+- This GitHub repository
 
-## 1. Deploy Infrastructure (one-time)
+## Setup (one-time)
 
-The CloudFormation template in `infra/cloudformation.yml` provisions everything.
+### 1. Create the Amplify app
 
-### Without a custom domain
+1. Open the [AWS Amplify console](https://console.aws.amazon.com/amplify/)
+2. Click **Create new app**
+3. Select **GitHub** and authorize access to `grim4ce/web-synth-wizard`
+4. Select the `main` branch
+5. Amplify will auto-detect the `amplify.yml` build spec — verify the settings:
+   - Build command: `npm run build`
+   - Output directory: `dist`
+6. Click **Save and deploy**
 
-```bash
-aws cloudformation deploy \
-  --template-file infra/cloudformation.yml \
-  --stack-name web-synth-wizard \
-  --capabilities CAPABILITY_NAMED_IAM \
-  --region us-east-1
-```
-
-### With a custom domain
-
-First, create an ACM certificate in **us-east-1** for your domain and validate
-it. Then:
+### Using the AWS CLI
 
 ```bash
-aws cloudformation deploy \
-  --template-file infra/cloudformation.yml \
-  --stack-name web-synth-wizard \
-  --capabilities CAPABILITY_NAMED_IAM \
-  --region us-east-1 \
-  --parameter-overrides \
-    DomainName=synth.example.com \
-    CertificateArn=arn:aws:acm:us-east-1:123456789012:certificate/abc-123
+aws amplify create-app \
+  --name web-synth-wizard \
+  --repository https://github.com/grim4ce/web-synth-wizard \
+  --platform WEB \
+  --build-spec "$(cat amplify.yml)"
 ```
 
-After the stack is created, add a CNAME (or Route 53 alias) from your domain
-to the CloudFront distribution domain shown in the stack outputs.
+### 2. Configure SPA redirects
 
-### View stack outputs
+In the Amplify console, go to **Hosting > Rewrites and redirects** and add:
 
-```bash
-aws cloudformation describe-stacks \
-  --stack-name web-synth-wizard \
-  --query 'Stacks[0].Outputs' \
-  --output table
-```
+| Source address | Target address | Type          |
+| -------------- | -------------- | ------------- |
+| `</^[^.]+$\|\.(?!(css\|gif\|ico\|jpg\|js\|png\|txt\|svg\|woff\|woff2\|ttf\|map\|json\|webp)$)([^.]+$)/>`  | `/index.html`  | `200 (Rewrite)` |
 
-You'll need these values for the next step:
-- `BucketName`
-- `DistributionId`
-- `DeploymentRoleArn`
+This ensures all SPA routes serve `index.html` instead of returning 404.
 
-## 2. Configure GitHub Actions
+### 3. Enable PR previews (optional)
 
-### Set up OIDC (one-time)
+1. In the Amplify console, go to **Hosting > Previews**
+2. Click **Enable previews**
+3. Each pull request will get its own preview URL automatically
 
-The CloudFormation template creates a deployment IAM role that trusts GitHub's
-OIDC provider. You need to ensure the OIDC provider exists in your account:
+## Deploying
 
-```bash
-# Check if the GitHub OIDC provider already exists
-aws iam list-open-id-connect-providers
+**Automatic:** Push to `main` and Amplify builds and deploys within minutes.
 
-# If not, create it
-aws iam create-open-id-connect-provider \
-  --url https://token.actions.githubusercontent.com \
-  --client-id-list sts.amazonaws.com \
-  --thumbprint-list 6938fd4d98bab03faadb97b34396831e3780aea1
-```
+**Manual (via console):** Go to the Amplify app page and click **Redeploy this version**.
 
-### Add repository variables
+## CI Pipeline
 
-In your GitHub repository, go to **Settings > Environments**, create a
-`production` environment, and add these variables:
+The GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every
+push and PR to `main`:
 
-| Variable                          | Value                                   |
-| --------------------------------- | --------------------------------------- |
-| `AWS_DEPLOY_ROLE_ARN`             | The `DeploymentRoleArn` from the stack  |
-| `AWS_REGION`                      | `us-east-1` (or your chosen region)     |
-| `AWS_S3_BUCKET`                   | The `BucketName` from the stack         |
-| `AWS_CLOUDFRONT_DISTRIBUTION_ID`  | The `DistributionId` from the stack     |
+1. Lint (`eslint`)
+2. Type check (`vue-tsc`)
+3. Unit tests (`vitest`)
+4. Build verification
 
-## 3. Deploy
-
-Push to `main` and the GitHub Actions workflow handles everything:
-
-1. Installs dependencies
-2. Runs lint, type-check, and unit tests
-3. Builds the production bundle
-4. Syncs files to S3 with optimized cache headers
-5. Invalidates CloudFront cache for `index.html`
-
-### Manual deployment (without CI)
-
-```bash
-# Build locally
-npm run build
-
-# Sync to S3
-aws s3 sync dist/ s3://YOUR_BUCKET_NAME \
-  --delete \
-  --cache-control "public, max-age=31536000, immutable" \
-  --exclude "index.html"
-
-aws s3 cp dist/index.html s3://YOUR_BUCKET_NAME/index.html \
-  --cache-control "public, max-age=60, stale-while-revalidate=86400"
-
-# Invalidate CDN cache
-aws cloudfront create-invalidation \
-  --distribution-id YOUR_DISTRIBUTION_ID \
-  --paths "/index.html"
-```
+This runs independently of Amplify's build and catches issues early in PRs.
 
 ## Caching Strategy
 
-| File type           | Cache header                                         | Rationale                                  |
-| ------------------- | ---------------------------------------------------- | ------------------------------------------ |
-| Hashed assets (JS, CSS) | `public, max-age=31536000, immutable`          | Content-hashed filenames — safe to cache forever |
-| `index.html`        | `public, max-age=60, stale-while-revalidate=86400`   | Must revalidate quickly to pick up new deploys |
-| `manifest.json`     | `public, max-age=60, stale-while-revalidate=86400`   | May change across deploys                  |
+Configured in `amplify.yml` via custom headers:
+
+| File type                  | Cache header                                       | Rationale                                    |
+| -------------------------- | -------------------------------------------------- | -------------------------------------------- |
+| Hashed assets (`.js`, `.css`) | `public, max-age=31536000, immutable`           | Content-hashed filenames — safe to cache forever |
+| `index.html`               | `public, max-age=60, stale-while-revalidate=86400` | Must revalidate quickly to pick up new deploys |
+
+## Custom Domain
+
+1. In the Amplify console, go to **Hosting > Custom domains**
+2. Click **Add domain**
+3. Enter your domain and follow the DNS verification steps
+4. Amplify provisions and manages the SSL certificate automatically
 
 ## Cost Estimate
 
-For a low-to-moderate traffic site:
-
-| Service      | Estimated monthly cost |
-| ------------ | ---------------------- |
-| S3 storage   | < $0.01                |
-| CloudFront   | $0.00 – $1.00          |
-| **Total**    | **~$1/month or less**  |
-
-CloudFront includes 1 TB of free data transfer and 10M requests/month in
-the first 12 months (Always Free tier includes 10M requests/month ongoing).
+| Resource             | Free tier                     | After free tier       |
+| -------------------- | ----------------------------- | --------------------- |
+| Build minutes        | 1,000 min/month               | $0.01/min             |
+| Data served          | 15 GB/month                   | $0.15/GB              |
+| Data stored          | 5 GB                          | $0.023/GB             |
+| **Typical monthly**  |                               | **$0 – $1/month**     |
 
 ## Troubleshooting
 
-**404 errors on page refresh (SPA routes)**
-The CloudFormation template configures CloudFront custom error responses to
-return `index.html` for 403/404 errors, enabling Vue Router's history mode.
+**Build fails in Amplify but works locally**
+Check the build logs in the Amplify console. Common causes:
+- Node.js version mismatch — Amplify defaults may differ from your local version.
+  Add to `amplify.yml` under `preBuild` commands: `nvm use 20`
+- Missing dependencies — ensure `package-lock.json` is committed
 
-**Changes not visible after deploy**
-CloudFront caches aggressively. The CI pipeline invalidates `index.html`
-automatically. For manual deploys, run the invalidation command above.
+**404 on page refresh**
+Verify the SPA rewrite rule is configured (see step 2 above).
 
-**CORS issues**
-CloudFront's `SecurityHeadersPolicy` is attached to the distribution. If you
-need custom CORS headers, create a custom response headers policy in the
-CloudFormation template.
+**Stale content after deploy**
+Amplify automatically invalidates the CloudFront cache on deploy. If content
+is still stale, check your browser cache or try an incognito window.

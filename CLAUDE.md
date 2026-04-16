@@ -62,6 +62,10 @@ ADSR envelope parameters (attack, decay, sustain, release) are stored in **milli
 - No trailing commas
 - Vue Composition API with `<script setup>` pattern
 
+## Pull Requests
+
+Always create PRs as **ready for review** (not draft).
+
 ## Browser Support
 
 Targets Firefox for best Web Audio API compatibility. Requires `AudioContext` support.

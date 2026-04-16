@@ -9,7 +9,7 @@ import DCheckbox from "./DCheckbox.vue";
 const { oscillatorSettings, selectedMusicalKey, selectedOctave, quantize, calculateFrequency } = useAudioContext();
 
 const waves = ["sawtooth", "sine", "square", "triangle"];
-const keys = [ "A", "A#", "B", "C", "D", "D#", "E", "F", "F#", "G", "G#"]
+const keys = [ "A", "A#", "B", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#"]
 const octaves = [1, 2, 3, 4, 5, 6, 7]
 
 const type = ref(oscillatorSettings.value.type)

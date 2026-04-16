@@ -21,7 +21,7 @@ export const useVCO = () => {
         const oscillator = audioContext.createOscillator();
         let frequency = Number(oscillatorSettings.baseFrequency) * Math.pow(2, stepNote / 12);
 
-        if (quantize && selectedMusicalKey) {
+        if (quantize.value && selectedMusicalKey) {
             frequency = quantizeNote(selectedMusicalKey.value, selectedOctave.value, stepNote);
         }
 
@@ -35,9 +35,9 @@ export const useVCO = () => {
         const noteFrequency = calculateFrequencyForNoteInKey(keyOffsetFromC, octave, note);
         
         const majorScale = [0, 2, 4, 5, 7, 9, 11]; // Major scale intervals in semitones from the root
-        const closestNoteIndex = majorScale.reduce((prevIndex, currIndex, currentIndex) => {
+        const closestNoteIndex = majorScale.reduce((prevIndex, _currSemitone, currentIndex) => {
             const prevNoteFrequency = calculateFrequencyForNoteInKey(keyOffsetFromC, octave, majorScale[prevIndex]);
-            const currNoteFrequency = calculateFrequencyForNoteInKey(keyOffsetFromC, octave, currIndex);
+            const currNoteFrequency = calculateFrequencyForNoteInKey(keyOffsetFromC, octave, majorScale[currentIndex]);
             return (Math.abs(noteFrequency - prevNoteFrequency) < Math.abs(noteFrequency - currNoteFrequency)) ? prevIndex : currentIndex;
         }, 0);
     

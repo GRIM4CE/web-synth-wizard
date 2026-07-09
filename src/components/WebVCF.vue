@@ -43,33 +43,33 @@ watch(filterQ, (newValue) => {
         
       <div class="web-vcf-slider-wrapper">
         <div class="web-vcf-slider">
-          <DSlider orient="vertical" id="frequency" type="range" :min="20" :max="20000" v-model="filterEnvelope.envelope.value.frequency" step="1" />
-          <label for="frequency">Freq</label>
+          <DSlider orient="vertical" id="vcf-frequency" aria-label="Filter cutoff frequency" type="range" :min="20" :max="20000" v-model="filterEnvelope.envelope.value.frequency" step="1" />
+          <label for="vcf-frequency">Freq</label>
         </div>
 
         <div class="web-vcf-slider">
-          <DSlider orient="vertical" id="resonance" type="range" :min="0.0001" :max="30" v-model="filterQ" step="0.01"/>
-          <label for="resonance">Res</label>
+          <DSlider orient="vertical" id="vcf-resonance" aria-label="Filter resonance" type="range" :min="0.0001" :max="30" v-model="filterQ" step="0.01"/>
+          <label for="vcf-resonance">Res</label>
         </div>
-        
+
         <div class="web-vcf-slider">
-          <DSlider orient="vertical" id="attack" type="range" :min="0.0001" :max="5000" step="0.001" v-model="filterEnvelope.envelope.value.attack" />
-          <label for="attack">A</label>
+          <DSlider orient="vertical" id="vcf-attack" aria-label="Filter attack" type="range" :min="0.0001" :max="5000" step="0.001" v-model="filterEnvelope.envelope.value.attack" />
+          <label for="vcf-attack">A</label>
         </div>
-        
+
         <div class="web-vcf-slider">
-          <DSlider orient="vertical" id="decay" type="range" :min="0.0001" :max="500" step="0.01" v-model="filterEnvelope.envelope.value.decay" />
-          <label for="decay">D</label>
+          <DSlider orient="vertical" id="vcf-decay" aria-label="Filter decay" type="range" :min="0.0001" :max="500" step="0.01" v-model="filterEnvelope.envelope.value.decay" />
+          <label for="vcf-decay">D</label>
         </div>
-        
+
         <div class="web-vcf-slider">
-          <DSlider orient="vertical" id="sustain" type="range" :min="0.0001" :max="1" step="0.01" v-model="filterEnvelope.envelope.value.sustain" />
-          <label for="sustain">S</label>
+          <DSlider orient="vertical" id="vcf-sustain" aria-label="Filter sustain" type="range" :min="0.0001" :max="1" step="0.01" v-model="filterEnvelope.envelope.value.sustain" />
+          <label for="vcf-sustain">S</label>
         </div>
-        
+
         <div class="web-vcf-slider">
-          <DSlider orient="vertical" id="release" type="range" :min="0.0001" :max="1000" step="0.01" v-model="filterEnvelope.envelope.value.release" />
-          <label for="release">R</label>
+          <DSlider orient="vertical" id="vcf-release" aria-label="Filter release" type="range" :min="0.0001" :max="1000" step="0.01" v-model="filterEnvelope.envelope.value.release" />
+          <label for="vcf-release">R</label>
         </div>
       </div>
   </div>

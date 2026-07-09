@@ -1,21 +1,8 @@
 <script lang="ts" setup>
-import { watch } from 'vue';
-import { useAudioContext } from '@/composables/useAudioContext'; 
+import { useAudioContext } from '@/composables/useAudioContext';
 import DSlider from './DSlider.vue'
 
-const { clock, timeDivision} = useAudioContext();
-
-watch(clock, (newClockValue) => {
-  if(clock.value) {
-    clock.value = newClockValue
-  }
-});
-
-watch(timeDivision, (newTimeDivisionVale) => {
-  if(timeDivision.value) {
-    timeDivision.value = newTimeDivisionVale
-  }
-});
+const { clock, timeDivision } = useAudioContext();
 
 const timeDivisions = [
   { value: 1, label: 'Whole notes' },

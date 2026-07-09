@@ -1,35 +1,11 @@
 <script lang="ts" setup>
-import { watch } from 'vue';
-import { useAudioContext } from '@/composables/useAudioContext'; 
+import { useAudioContext } from '@/composables/useAudioContext';
 import DSlider from './DSlider.vue'
 
 const { vcaEnvelope } = useAudioContext();
 
 const minGain = 0.0001
 const maxGain = .1
-
-const minOutput = 0.0001
-const maxOutput = .03
-
-const linearToLogarithmic = (value: number) => {
-    // Ensure the value is within the range [min, max]
-    const normalized = (value - minGain) / (maxGain - minGain);
-    // Convert the normalized linear range [0, 1] to a logarithmic scale
-    const logValue = Math.pow(maxOutput / minOutput, normalized) - 1;
-    return logValue;
-}
-
-watch(vcaEnvelope.envelope, (newEnvelope) => {
-  if(vcaEnvelope.envelope.value) {
-    vcaEnvelope.envelope.value = newEnvelope
-  }
-});
-
-watch(() => vcaEnvelope.envelope.value.gain, (newGain) => {
-  linearToLogarithmic(newGain);
-}, { immediate: true });
-
-
 </script>
 
 <template>

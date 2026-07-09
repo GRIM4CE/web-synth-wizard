@@ -18,12 +18,6 @@ watch(filterType, (newFilterType) => {
   filterNode.value.type = newFilterType
 });
 
-watch(filterEnvelope.envelope, (newEnvelope) => {
-  if(filterEnvelope.envelope.value) {
-    filterEnvelope.envelope.value = newEnvelope
-  }
-});
-
 watch(filterQ, (newValue) => {
   if(!filterNode.value) return
   filterNode.value.Q.value = newValue;

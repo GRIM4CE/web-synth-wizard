@@ -1,16 +1,9 @@
 <script lang="ts" setup>
-import { watch } from 'vue';
-import { useAudioContext } from '@/composables/useAudioContext'; 
+import { useAudioContext } from '@/composables/useAudioContext';
 import DSlider from './DSlider.vue'
 import DCheckbox from './DCheckbox.vue'
 
 const { steps } = useAudioContext()
-
-watch(steps, (newStepsValue) => {
-  if(steps.value) {
-    steps.value = newStepsValue
-  }
-});
 </script>
 
 <template>

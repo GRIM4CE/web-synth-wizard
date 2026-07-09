@@ -64,7 +64,7 @@ watch(selectedOctave, (newSelectedOctave: Octaves) => {
 
       <div>
         <p>Octave:</p>
-        <select v-model="selectedOctave" name="key" id="key-select">
+        <select v-model="selectedOctave" name="octave" id="octave-select">
           <option v-for="octave in octaves" :key="octave" :value="octave">{{ octave }}</option>
         </select>
       </div>

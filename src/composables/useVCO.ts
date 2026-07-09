@@ -4,7 +4,7 @@ import { notes } from "@/utils/config"
 const calculateFrequencyForNoteInKey = (keyOffsetFromC: number, octave: number, note: number) => {
     const A4_FREQUENCY = 440;
     const SEMITONE_RATIO = Math.pow(2, 1/12);
-    const rootNoteDistanceFromA4 = keyOffsetFromC + notes['A'] - notes['C'] + ((octave - 4) * 12);
+    const rootNoteDistanceFromA4 = keyOffsetFromC - notes['A'] + notes['C'] + ((octave - 4) * 12);
     const frequencyForCInOctave = A4_FREQUENCY * Math.pow(SEMITONE_RATIO, rootNoteDistanceFromA4);
     return frequencyForCInOctave * Math.pow(SEMITONE_RATIO, note);
 }

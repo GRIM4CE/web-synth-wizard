@@ -18,8 +18,8 @@ watch(steps, (newStepsValue) => {
         <h2>Sequencer</h2>
         <div class="web-sequencer-steps">
             <div class="web-sequencer-step" v-for="(step, index) in steps" :key="index">
-                <DSlider orient="vertical" :min="0" :max="12" v-model="step.note"/>
-                <DCheckbox type="checkbox" :id="`check-id-${index}`" v-model="step.active"/>
+                <DSlider orient="vertical" :min="0" :max="12" :aria-label="`Step ${index + 1} note`" v-model="step.note"/>
+                <DCheckbox type="checkbox" :id="`check-id-${index}`" :aria-label="`Step ${index + 1} active`" v-model="step.active"/>
             </div>
         </div>
     </div>

@@ -31,11 +31,11 @@ const timeDivisions = [
 <template>
   <div class="web-clock">
     <h2>Clock</h2>
-    <DSlider type="range" :min="20" :max="400" step="1" v-model="clock" />
+    <DSlider type="range" :min="20" :max="400" step="1" aria-label="Clock tempo in BPM" v-model="clock" />
     <p>BPM: {{ clock }}</p>
 
-    <h2>Time Division</h2>
-    <select v-model="timeDivision">
+    <h2 id="time-division-label">Time Division</h2>
+    <select v-model="timeDivision" aria-labelledby="time-division-label">
       <option v-for="division in timeDivisions" :key="division.value" :value="division.value">
         {{ division.label }}
       </option>

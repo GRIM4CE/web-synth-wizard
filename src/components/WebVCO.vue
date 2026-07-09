@@ -49,35 +49,35 @@ watch(selectedOctave, (newSelectedOctave: Octaves) => {
     <div class="web-vco">
       <h2 class="web-vco-title">VCO - Voltage Controlled Oscillator</h2>
       <div>
-        <p>Wave:</p>
+        <label for="wave-select">Wave:</label>
         <select v-model="type" name="waves" id="wave-select">
           <option v-for="wave in waves" :key="wave" :value="wave">{{ wave }}</option>
         </select>
       </div>
 
       <div>
-        <p>Key:</p>
+        <label for="key-select">Key:</label>
         <select v-model="selectedMusicalKey" name="key" id="key-select">
           <option v-for="musicalKey in keys" :key="musicalKey" :value="musicalKey">{{ musicalKey }}</option>
         </select>
       </div>
 
       <div>
-        <p>Octave:</p>
+        <label for="octave-select">Octave:</label>
         <select v-model="selectedOctave" name="octave" id="octave-select">
           <option v-for="octave in octaves" :key="octave" :value="octave">{{ octave }}</option>
         </select>
       </div>
 
       <div>
-        <p>Quantize:</p>
-        <DCheckbox type="checkbox" id="quantize" v-model="quantize"/>
+        <label for="quantize">Quantize:</label>
+        <DCheckbox type="checkbox" id="quantize" aria-label="Quantize" v-model="quantize"/>
       </div>
 
-      
+
 
       <div class="web-vco-freq">
-        <DSlider type="range" :min="0" :max="2000" id="frequencySlider" v-model="baseFrequency" />
+        <DSlider type="range" :min="0" :max="2000" id="frequencySlider" aria-label="Base frequency" v-model="baseFrequency" />
         <p>Base Frequency: {{ baseFrequency.toFixed(2) }} Hz</p>
       </div>
     </div>

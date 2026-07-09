@@ -5,6 +5,8 @@
   import WebClock from './components/WebClock.vue';
   import WebSequencer from './components/WebSequencer.vue';
   import { useAudioContext } from "@/composables/useAudioContext"
+  import logoPng from './assets/logo.png'
+  import logoWebp from './assets/logo.webp'
 
   const { startAudioContext, suspendAudioContext } = useAudioContext()
   const canUseAudioContext = 'AudioContext' in window
@@ -12,14 +14,29 @@
 
 <template>
   <main class="main-disabled-container" v-if="!canUseAudioContext">
-    <img alt="Web Synth Wizard logo"  class="logo" src="./assets/logo.png" width="125" height="125" />
-    <h2>Web Synth Wizard</h2>
+    <picture>
+      <source :srcset="logoWebp" type="image/webp" />
+      <img alt="Web Synth Wizard logo" class="logo" :src="logoPng" width="125" height="125" />
+    </picture>
+    <h1>Web Synth Wizard</h1>
     <p>Unfortunately, your current device or browser does not support Web Audio API's AudioContext, a crucial feature which the application heavily relies on. We recommend using a desktop computer with Firefox for the best experience. We apologize for the inconvenience and are looking forward to having you create with Web Synth Wizard on a compatible setup.</p>
   </main>
 
   <main class="main-container container" v-else>
     <section class="section main-head">
-      <img alt="Web Synth Wizard logo" class="logo" src="./assets/logo.png" width="125" height="125" />
+      <h1 class="visually-hidden">Web Synth Wizard</h1>
+      <picture>
+        <source :srcset="logoWebp" type="image/webp" />
+        <img
+          alt="Web Synth Wizard logo"
+          class="logo"
+          :src="logoPng"
+          width="125"
+          height="125"
+          fetchpriority="high"
+          decoding="async"
+        />
+      </picture>
       <p class="main-head-callout-text">This project is currently under active development to enhance its features and improve user experience. For the best experience, I'd recommend using Firefox, as it provides the most stable and compatible environment for our project's functionalities. While other browsers may also work, you might encounter some differences in performance or layout.</p>
 
       <div class="utility-button-wrapper">

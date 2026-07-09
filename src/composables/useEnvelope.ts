@@ -16,16 +16,18 @@ export const useEnvelope = () => {
 
     const now = audioContext.currentTime;
 
-    gainNode.gain.setValueAtTime(gain, now);
+    // Peak level reached at the end of the attack phase
+    const peak = Math.max(gain, 0.0001)
+    // Sustain is a 0..1 fraction of the peak level, not an absolute gain
+    const sustainLevel = Math.max(sustain * peak, 0.0001);
 
-    // Use exponential ramp for attack phase if gain is not very low
-    if (gain > 0.0001) {
-      gainNode.gain.exponentialRampToValueAtTime(gain, now + attack);
-    } else {
-      gainNode.gain.linearRampToValueAtTime(0, now + attack);
-    }
+    // Start from near-silence so the attack phase actually ramps up
+    gainNode.gain.setValueAtTime(0.0001, now);
 
-    const sustainLevel = Math.max(sustain, 0.0001);
+    // Attack: ramp up to the peak level
+    gainNode.gain.exponentialRampToValueAtTime(peak, now + attack);
+
+    // Decay: ramp down to the sustain level
     gainNode.gain.exponentialRampToValueAtTime(sustainLevel, now + attack + decay);
 
     // Schedule the release
@@ -49,18 +51,22 @@ export const useEnvelope = () => {
 
     const now = audioContext.currentTime;
 
-    filter.frequency.setValueAtTime(frequency, now);
+    // Base cutoff the envelope opens from and returns to (exponential ramps need a positive floor)
+    const base = Math.max(frequency, 0.0001)
+    const peak = Math.max(maxFrequency, 0.0001)
+
+    filter.frequency.setValueAtTime(base, now);
 
     // Attack: Ramp to peak frequency
-    filter.frequency.exponentialRampToValueAtTime(maxFrequency, now + attack);
+    filter.frequency.exponentialRampToValueAtTime(peak, now + attack);
 
     // Decay: Ramp down to the sustain level
-    const sustainFrequency = frequency + (maxFrequency - frequency) * sustain;
+    const sustainFrequency = Math.max(frequency + (maxFrequency - frequency) * sustain, 0.0001);
     filter.frequency.exponentialRampToValueAtTime(sustainFrequency, now + attack + decay);
 
-     // Schedule the release
+     // Release: ramp the cutoff back down to the base frequency
      filter.frequency.setValueAtTime(sustainFrequency, now + durationSec - release);
-     filter.frequency.exponentialRampToValueAtTime(0.0001, now + durationSec);
+     filter.frequency.exponentialRampToValueAtTime(base, now + durationSec);
   }
 
   const createEnvelope = (envelopeSettings: VcaEnvelope | FilterEnvelope, type: "vca" | "filter") => {

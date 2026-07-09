@@ -73,6 +73,41 @@ describe('useVCO', () => {
     expect(freqHigh).toBeGreaterThan(freqLow)
   })
 
+  it('quantizes to the correct absolute frequency for a known key/octave', () => {
+    const mock = createMockAudioContext()
+    const { createOscillator } = useVCO()
+
+    // Key C, octave 4, root note (stepNote 0) should quantize to C4 ≈ 261.63 Hz
+    createOscillator({
+      audioContext: mock as unknown as AudioContext,
+      oscillatorSettings: { type: 'sine', baseFrequency: 440 },
+      stepNote: 0,
+      selectedMusicalKey: ref<MusicalKey>('C'),
+      selectedOctave: ref<1 | 2 | 3 | 4 | 5 | 6 | 7>(4),
+      quantize: ref(true),
+    })
+
+    const frequency = mock.setValueAtTime.mock.calls[0][0]
+    expect(frequency).toBeCloseTo(261.63, 1)
+  })
+
+  it('quantizes an A root to A4 (440 Hz)', () => {
+    const mock = createMockAudioContext()
+    const { createOscillator } = useVCO()
+
+    createOscillator({
+      audioContext: mock as unknown as AudioContext,
+      oscillatorSettings: { type: 'sine', baseFrequency: 440 },
+      stepNote: 0,
+      selectedMusicalKey: ref<MusicalKey>('A'),
+      selectedOctave: ref<1 | 2 | 3 | 4 | 5 | 6 | 7>(4),
+      quantize: ref(true),
+    })
+
+    const frequency = mock.setValueAtTime.mock.calls[0][0]
+    expect(frequency).toBeCloseTo(440, 1)
+  })
+
   it('produces different frequencies for different octaves', () => {
     const mock1 = createMockAudioContext()
     const mock2 = createMockAudioContext()

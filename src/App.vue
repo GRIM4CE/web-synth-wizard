@@ -4,6 +4,7 @@
   import WebVCA from './components/WebVCA.vue';
   import WebClock from './components/WebClock.vue';
   import WebSequencer from './components/WebSequencer.vue';
+  import WebOscilloscope from './components/WebOscilloscope.vue';
   import { useAudioContext } from "@/composables/useAudioContext"
   import logoPng from './assets/logo.png'
   import logoWebp from './assets/logo.webp'
@@ -24,24 +25,30 @@
 
   <main class="main-container container" v-else>
     <section class="section main-head">
-      <h1 class="visually-hidden">Web Synth Wizard</h1>
-      <picture>
-        <source :srcset="logoWebp" type="image/webp" />
-        <img
-          alt="Web Synth Wizard logo"
-          class="logo"
-          :src="logoPng"
-          width="125"
-          height="125"
-          fetchpriority="high"
-          decoding="async"
-        />
-      </picture>
-      <p class="main-head-callout-text">This project is currently under active development to enhance its features and improve user experience. For the best experience, I'd recommend using Firefox, as it provides the most stable and compatible environment for our project's functionalities. While other browsers may also work, you might encounter some differences in performance or layout.</p>
+      <div class="main-head-intro">
+        <h1 class="visually-hidden">Web Synth Wizard</h1>
+        <picture>
+          <source :srcset="logoWebp" type="image/webp" />
+          <img
+            alt="Web Synth Wizard logo"
+            class="logo"
+            :src="logoPng"
+            width="125"
+            height="125"
+            fetchpriority="high"
+            decoding="async"
+          />
+        </picture>
+        <p class="main-head-callout-text">This project is currently under active development to enhance its features and improve user experience. For the best experience, I'd recommend using Firefox, as it provides the most stable and compatible environment for our project's functionalities. While other browsers may also work, you might encounter some differences in performance or layout.</p>
 
-      <div class="utility-button-wrapper">
-        <button class="button" @click="startAudioContext()">Activate Synth</button>
-        <button class="button stop-button" @click="suspendAudioContext()">Stop Synth</button>
+        <div class="utility-button-wrapper">
+          <button class="button" @click="startAudioContext()">Activate Synth</button>
+          <button class="button stop-button" @click="suspendAudioContext()">Stop Synth</button>
+        </div>
+      </div>
+
+      <div class="main-head-scope">
+        <WebOscilloscope />
       </div>
     </section>
 
@@ -106,15 +113,42 @@
   text-align: center;
   justify-content: center;
   align-content: center;
+  row-gap: 1rem;
 
   @include md {
     grid-column: span 3;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    column-gap: 2rem;
+    text-align: left;
+  }
+}
+
+.main-head-intro {
+  display: grid;
+  justify-items: center;
+
+  @include md {
+    justify-items: start;
+  }
+}
+
+.main-head-scope {
+  display: flex;
+  justify-content: center;
+
+  @include md {
+    justify-content: flex-end;
   }
 }
 
 .logo {
   display: block;
   margin: 0 auto 0rem;
+
+  @include md {
+    margin-left: 0;
+  }
 }
 
 .main-head-callout-text { 

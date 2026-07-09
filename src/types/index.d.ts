@@ -18,6 +18,8 @@ export type UseSequancerParams = {
     audioContext: Ref<AudioContext | null>,
     filterNode: Ref<BiquadFilterNode | null>,
     gainNode: Ref<GainNode | null>,
+    analyserNode: Ref<AnalyserNode | null>,
+    filterEnabled: Ref<boolean>,
     filterEnvelope: FilterEnvelopeObject,
     vcaEnvelope: VcaEnvelopeObject,
     oscillatorSettings: Ref<OscillatorSettings>

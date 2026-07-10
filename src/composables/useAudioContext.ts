@@ -5,8 +5,8 @@ import type { MusicalKey, Octaves } from "@/types"
 
 import { notes } from "@/utils/config"
 
-const { initSynth, clock, timeDivision, audioContext, gainNode, filterNode, oscillatorSettings, filterSettings, filterEnvelope, vcaEnvelope, selectedMusicalKey, selectedOctave, quantize } = useAudioContextManager()
-const { steps, startSequencer, stopSequencer } = useSequencer({clock, timeDivision, audioContext, gainNode, filterNode, filterEnvelope, vcaEnvelope, oscillatorSettings, selectedMusicalKey, selectedOctave, quantize })
+const { initSynth, clock, timeDivision, audioContext, gainNode, analyserNode, filterEnabled, filterNode, oscillatorSettings, filterSettings, filterEnvelope, vcaEnvelope, selectedMusicalKey, selectedOctave, quantize } = useAudioContextManager()
+const { steps, startSequencer, stopSequencer } = useSequencer({clock, timeDivision, audioContext, gainNode, analyserNode, filterEnabled, filterNode, filterEnvelope, vcaEnvelope, oscillatorSettings, selectedMusicalKey, selectedOctave, quantize })
 
 
 export const useAudioContext = () => {
@@ -38,5 +38,5 @@ export const useAudioContext = () => {
         stopSequencer()
     };
     
-    return { clock, timeDivision, audioContext, gainNode, filterNode, oscillatorSettings, filterSettings, vcaEnvelope, filterEnvelope, steps, updateStepValue, startAudioContext, suspendAudioContext, calculateFrequency, selectedMusicalKey, selectedOctave, quantize};
+    return { clock, timeDivision, audioContext, gainNode, analyserNode, filterEnabled, filterNode, oscillatorSettings, filterSettings, vcaEnvelope, filterEnvelope, steps, updateStepValue, startAudioContext, suspendAudioContext, calculateFrequency, selectedMusicalKey, selectedOctave, quantize};
 }

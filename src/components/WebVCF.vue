@@ -1,10 +1,11 @@
 <script lang="ts" setup>
 import { ref, watch } from 'vue';
-import { useAudioContext } from '@/composables/useAudioContext'; 
+import { useAudioContext } from '@/composables/useAudioContext';
 import DSlider from './DSlider.vue'
+import DCheckbox from './DCheckbox.vue'
 
 // Retrieve the shared AudioContext and gain node from a composable
-const { filterNode, filterSettings, filterEnvelope } = useAudioContext();
+const { filterNode, filterSettings, filterEnvelope, filterEnabled } = useAudioContext();
 
 // Reactive filter parameters
 const filterTypes: BiquadFilterType[] = ["lowpass", 'highpass', 'bandpass', 'notch']
@@ -28,6 +29,10 @@ watch(filterQ, (newValue) => {
 <template>
   <div class="web-vcf">
       <h2>VCF - Voltage Controlled Filter</h2>
+      <div class="web-vcf-power">
+        <label for="filter-enabled">Filter: {{ filterEnabled ? 'On' : 'Off' }}</label>
+        <DCheckbox id="filter-enabled" aria-label="Enable filter" v-model="filterEnabled" />
+      </div>
       <label for="filter-type">Filter Type: {{ filterType }}</label>
         <select id="filter-type" v-model="filterType">
             <option v-for="filterType in filterTypes" :key="filterType" :value="filterType">
@@ -77,6 +82,13 @@ watch(filterQ, (newValue) => {
     gap: 10px;
   }
 
+
+.web-vcf-power {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  column-gap: 0.5rem;
+}
 
 .web-vcf-slider-wrapper {
   display: flex;

@@ -10,6 +10,8 @@ const timeDivision = ref<TimeDivision>(2)
 const audioContext = ref<AudioContextType | null>(null);
 const filterNode = ref<BiquadFilterNode | null>(null);
 const gainNode = ref<GainNode | null>(null);
+const analyserNode = ref<AnalyserNode | null>(null);
+const filterEnabled = ref(true);
 const oscillatorSettings = ref<OscillatorSettings>({ baseFrequency: 147, type: "square" });
 const filterSettings = ref<FilterSettings>({ frequency: 2500, q: 1, type: 'lowpass' })
 const selectedMusicalKey = ref<MusicalKey>("D")
@@ -21,7 +23,7 @@ const vcaEnvelope = createEnvelope({
     decay: 100,
     sustain: 0.5,
     release: 50,
-    gain: .01,
+    gain: .05,
 }, "vca") as unknown as VcaEnvelopeObject
 
 const filterEnvelope = createEnvelope({
@@ -48,7 +50,13 @@ export const useAudioContextManager = () => {
         await audioContext.value.resume()
         gainNode.value = audioContext.value.createGain();
         filterNode.value = audioContext.value.createBiquadFilter();
+        const analyser = audioContext.value.createAnalyser();
+        analyser.fftSize = 2048;
+        // The analyser sits just before the destination so the oscilloscope
+        // reflects the final output regardless of whether the filter is engaged.
+        analyser.connect(audioContext.value.destination);
+        analyserNode.value = analyser;
     };
 
-    return { initSynth, clock, timeDivision, audioContext, gainNode, vcaEnvelope, oscillatorSettings, filterNode, filterSettings, filterEnvelope, selectedMusicalKey, selectedOctave, quantize };
+    return { initSynth, clock, timeDivision, audioContext, gainNode, analyserNode, filterEnabled, vcaEnvelope, oscillatorSettings, filterNode, filterSettings, filterEnvelope, selectedMusicalKey, selectedOctave, quantize };
 }

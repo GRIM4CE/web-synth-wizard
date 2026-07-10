@@ -11,6 +11,8 @@ export const useSequencer = ({
     audioContext,
     filterNode,
     gainNode,
+    analyserNode,
+    filterEnabled,
     filterEnvelope,
     vcaEnvelope,
     oscillatorSettings,
@@ -61,7 +63,7 @@ export const useSequencer = ({
     };
 
     function playStep(stepIndex: number) {
-        if (!steps.value[stepIndex].active || !audioContext.value || !gainNode.value || !filterNode.value) return;
+        if (!steps.value[stepIndex].active || !audioContext.value || !gainNode.value || !filterNode.value || !analyserNode.value) return;
         const stepNote = steps.value[stepIndex].note
 
         const oscillator = createOscillator({ 
@@ -75,12 +77,22 @@ export const useSequencer = ({
 
 
         oscillator.connect(gainNode.value);
-        gainNode.value.connect(filterNode.value);
-        filterNode.value.connect(audioContext.value.destination);
+
+        // Re-route the graph each step so toggling the filter takes effect immediately.
+        gainNode.value.disconnect();
+        filterNode.value.disconnect();
+        if (filterEnabled.value) {
+            gainNode.value.connect(filterNode.value);
+            filterNode.value.connect(analyserNode.value);
+        } else {
+            gainNode.value.connect(analyserNode.value);
+        }
 
         const duration = vcaEnvelope.applyVCAEnvelope(gainNode.value, audioContext.value, vcaEnvelope.envelope);
 
-        filterEnvelope.applyFilterEnvelope(filterNode.value, audioContext.value, filterEnvelope.envelope);
+        if (filterEnabled.value) {
+            filterEnvelope.applyFilterEnvelope(filterNode.value, audioContext.value, filterEnvelope.envelope);
+        }
 
         oscillator.start(audioContext.value.currentTime);
         setTimeout(() => oscillator.stop(), duration); // Note duration

@@ -29,8 +29,37 @@ export const useSequencer = ({
     
     let currentStep = 0;
     let intervalId: ReturnType<typeof setTimeout> | undefined;
+    let routed = false;
 
     const {createOscillator} = useVCO()
+
+    // Wire the gain node into the output chain. Done once (and again whenever the
+    // filter is toggled) rather than every step, so we don't tear down and rebuild
+    // the graph while audio is flowing — that rewiring is itself a source of clicks.
+    function routeGraph() {
+        if (!gainNode.value || !filterNode.value || !analyserNode.value) return;
+        gainNode.value.disconnect();
+        filterNode.value.disconnect();
+        if (filterEnabled.value) {
+            gainNode.value.connect(filterNode.value);
+            filterNode.value.connect(analyserNode.value);
+        } else {
+            gainNode.value.connect(analyserNode.value);
+        }
+        routed = true;
+    }
+
+    // Re-route immediately when the filter is toggled so the change is audible
+    // without waiting for the next step.
+    watch(filterEnabled, () => {
+        if (routed) routeGraph();
+    });
+
+    // If the synth is (re)initialised the gain node is replaced, so the fresh node
+    // needs wiring up again on the next step.
+    watch(gainNode, () => {
+        routed = false;
+    });
 
     function calculateNoteInterval() {
         // Calculate the duration of one beat in milliseconds
@@ -78,15 +107,9 @@ export const useSequencer = ({
 
         oscillator.connect(gainNode.value);
 
-        // Re-route the graph each step so toggling the filter takes effect immediately.
-        gainNode.value.disconnect();
-        filterNode.value.disconnect();
-        if (filterEnabled.value) {
-            gainNode.value.connect(filterNode.value);
-            filterNode.value.connect(analyserNode.value);
-        } else {
-            gainNode.value.connect(analyserNode.value);
-        }
+        // Ensure the output chain is wired up. Only routes on the first step; the
+        // filterEnabled watcher handles re-routing after that.
+        if (!routed) routeGraph();
 
         const duration = vcaEnvelope.applyVCAEnvelope(gainNode.value, audioContext.value, vcaEnvelope.envelope);
 
@@ -94,8 +117,14 @@ export const useSequencer = ({
             filterEnvelope.applyFilterEnvelope(filterNode.value, audioContext.value, filterEnvelope.envelope);
         }
 
-        oscillator.start(audioContext.value.currentTime);
-        setTimeout(() => oscillator.stop(), duration); // Note duration
+        const now = audioContext.value.currentTime;
+        oscillator.start(now);
+        // Stop on the audio clock (not setTimeout) so the oscillator ends exactly
+        // when the gain envelope has ramped to its floor. A drifting timer would cut
+        // the still-audible square wave mid-cycle, producing a click on every note.
+        oscillator.stop(now + duration / 1000);
+        // Release the finished oscillator so stopped nodes don't accumulate on the gain node.
+        oscillator.onended = () => oscillator.disconnect();
     }
 
 

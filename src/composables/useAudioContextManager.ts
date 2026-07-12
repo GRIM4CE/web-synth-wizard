@@ -48,7 +48,12 @@ export const useAudioContextManager = () => {
         }
         audioContext.value = new AudioContext()
         await audioContext.value.resume()
-        gainNode.value = audioContext.value.createGain();
+        const gain = audioContext.value.createGain();
+        // A fresh GainNode defaults to a gain of 1. Start it at silence so the first
+        // note ramps up from the floor instead of blasting at full volume for the
+        // duration of its attack.
+        gain.gain.setValueAtTime(0.0001, audioContext.value.currentTime);
+        gainNode.value = gain;
         filterNode.value = audioContext.value.createBiquadFilter();
         const analyser = audioContext.value.createAnalyser();
         analyser.fftSize = 2048;

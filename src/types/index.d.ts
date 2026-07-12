@@ -65,18 +65,22 @@ export interface VcaEnvelope extends Envelope {
     gain: number;
 }
   
-export type ApplyVCAEnvelope = (gainNode: GainNode, audioContext: AudioContext, envelope: Ref<VcaEnvelope>) => number
+export type TriggerVCAEnvelope = (gainNode: GainNode, audioContext: AudioContext, envelope: Ref<VcaEnvelope>) => void
 
-export type ApplyFilterEnvelope = (filter: BiquadFilterNode, audioContext: AudioContext, envelope: Ref<FilterEnvelope>) => void
+export type ReleaseVCAEnvelope = (gainNode: GainNode, audioContext: AudioContext, envelope: Ref<VcaEnvelope>) => number
+
+export type TriggerFilterEnvelope = (filter: BiquadFilterNode, audioContext: AudioContext, envelope: Ref<FilterEnvelope>) => void
 
 export type VcaEnvelopeObject = {
     envelope: Ref<VcaEnvelope>,
-    applyVCAEnvelope: ApplyVCAEnvelope
+    triggerAttack: TriggerVCAEnvelope,
+    triggerRelease: ReleaseVCAEnvelope
 }
 
 export type FilterEnvelopeObject = {
     envelope: Ref<FilterEnvelope>,
-    applyFilterEnvelope: ApplyFilterEnvelope
+    triggerAttack: TriggerFilterEnvelope,
+    triggerRelease: TriggerFilterEnvelope
 }
 
 export type Octaves = 1 | 2 | 3 | 4 | 5 | 6 | 7

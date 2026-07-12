@@ -31,7 +31,7 @@ environments — all with minimal configuration.
 3. Select **GitHub** and authorize access to `grim4ce/web-synth-wizard`
 4. Select the `main` branch
 5. Amplify will auto-detect the `amplify.yml` build spec — verify the settings:
-   - Build command: `npm run build`
+   - Build command: `npm run build-only` (see [Build Cost Optimization](#build-cost-optimization))
    - Output directory: `dist`
 6. Click **Save and deploy**
 
@@ -78,6 +78,22 @@ push and PR to `main`:
 4. Build verification
 
 This runs independently of Amplify's build and catches issues early in PRs.
+
+## Build Cost Optimization
+
+Amplify bills per build minute (`$0.01/min` after the free tier), so the
+`amplify.yml` build is trimmed to only what produces the deployed artifact:
+
+- **Deploy build runs `npm run build-only` (Vite only), not `npm run build`.**
+  Type-checking (`vue-tsc`) is a correctness gate, not a build artifact —
+  Vite/esbuild transpiles TypeScript without type-checking, so the emitted
+  bundle is identical either way. Type errors are already caught by GitHub
+  Actions CI on every push and PR, making a second `vue-tsc` run on each
+  Amplify deploy redundant. Removing it cuts the build phase by ~65%.
+- **`npm ci` runs with `--prefer-offline --no-audit --no-fund`** and a
+  project-local npm cache (`.npm/`) that is persisted via Amplify's `cache`
+  block alongside `node_modules`, so dependency installs resolve from cache
+  instead of re-downloading from the registry.
 
 ## Caching Strategy
 

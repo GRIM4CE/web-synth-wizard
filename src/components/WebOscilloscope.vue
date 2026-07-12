@@ -21,6 +21,16 @@ const minVoltageScale = 0.25
 const maxVoltageScale = 4
 const voltageScale = ref(1)
 
+// Freeze (hold): when true, the scope stops sampling new audio and keeps redrawing
+// the last captured frame, so the waveform can be studied. The timing and voltage
+// controls still apply, so the held frame can be zoomed and scaled.
+const frozen = ref(false)
+let lastFrame: Uint8Array | null = null
+
+function toggleFreeze() {
+  frozen.value = !frozen.value
+}
+
 function stopDrawing() {
   if (animationId !== undefined) {
     cancelAnimationFrame(animationId)
@@ -39,8 +49,17 @@ function draw() {
   }
 
   const bufferLength = analyser.fftSize
-  const dataArray = new Uint8Array(bufferLength)
-  analyser.getByteTimeDomainData(dataArray)
+  let dataArray: Uint8Array
+
+  if (frozen.value && lastFrame && lastFrame.length === bufferLength) {
+    // Hold: keep displaying the frame captured at the moment of freezing.
+    dataArray = lastFrame
+  } else {
+    // Sample fresh audio and remember it so it can be held if we freeze next.
+    dataArray = new Uint8Array(bufferLength)
+    analyser.getByteTimeDomainData(dataArray)
+    lastFrame = dataArray
+  }
 
   const { width, height } = canvasEl
 
@@ -54,12 +73,26 @@ function draw() {
   // zoomed-in view of the waveform.
   const visibleSamples = Math.max(2, Math.floor(bufferLength * timeScale.value))
   const sliceWidth = width / visibleSamples
+
+  // Trigger: start the sweep at the first rising crossing of the centre line
+  // (128). Without this the drawn window starts at a random phase every frame, so
+  // the wave slides around and reads as noise; anchoring to a rising edge holds a
+  // periodic wave (like a square) steady on screen.
+  const triggerLimit = bufferLength - visibleSamples
+  let triggerOffset = 0
+  for (let i = 1; i < triggerLimit; i++) {
+    if (dataArray[i - 1] < 128 && dataArray[i] >= 128) {
+      triggerOffset = i
+      break
+    }
+  }
+
   let x = 0
 
   for (let i = 0; i < visibleSamples; i++) {
     // Byte data is centered on 128; convert to a -1..1 deviation, apply the
     // voltage scale, then map around the vertical middle of the canvas.
-    const deviation = (dataArray[i] - 128) / 128
+    const deviation = (dataArray[triggerOffset + i] - 128) / 128
     const y = height / 2 - deviation * voltageScale.value * (height / 2)
 
     if (i === 0) {
@@ -119,6 +152,18 @@ onBeforeUnmount(stopDrawing)
         />
         <label for="oscilloscope-voltage">Voltage</label>
       </div>
+
+      <div class="oscilloscope-control">
+        <button
+          type="button"
+          class="oscilloscope-freeze"
+          :class="{ 'is-frozen': frozen }"
+          :aria-pressed="frozen"
+          @click="toggleFreeze"
+        >
+          {{ frozen ? 'Run' : 'Freeze' }}
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -154,11 +199,27 @@ onBeforeUnmount(stopDrawing)
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.25rem;
 
   label {
     font-size: 12px;
     color: var(--color-heading);
+  }
+}
+
+.oscilloscope-freeze {
+  font-size: 12px;
+  color: var(--color-heading);
+  background: var(--black-soft);
+  border: 2px solid var(--blue);
+  border-radius: 4px;
+  padding: 0.35rem 0.75rem;
+  cursor: pointer;
+
+  &.is-frozen {
+    background: var(--blue);
+    color: var(--black-soft);
   }
 }
 </style>

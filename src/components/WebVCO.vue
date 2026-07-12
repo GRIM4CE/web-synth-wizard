@@ -76,9 +76,18 @@ watch(selectedOctave, (newSelectedOctave: Octaves) => {
 
 
 
-      <div class="web-vco-freq">
-        <DSlider type="range" :min="0" :max="2000" id="frequencySlider" aria-label="Base frequency" v-model="baseFrequency" />
-        <p>Base Frequency: {{ baseFrequency.toFixed(2) }} Hz</p>
+      <div class="web-vco-freq" :class="{ 'is-disabled': quantize }">
+        <DSlider
+          type="range"
+          :min="0"
+          :max="2000"
+          id="frequencySlider"
+          aria-label="Base frequency"
+          :disabled="quantize"
+          v-model="baseFrequency"
+        />
+        <p v-if="quantize">Base Frequency: controlled by Key/Octave while Quantize is on</p>
+        <p v-else>Base Frequency: {{ baseFrequency.toFixed(2) }} Hz</p>
       </div>
     </div>
 </template>
@@ -95,6 +104,10 @@ watch(selectedOctave, (newSelectedOctave: Octaves) => {
 .web-vco-title,
 .web-vco-freq {
   grid-column: span 4;
+}
+
+.web-vco-freq.is-disabled {
+  opacity: 0.5;
 }
 
 </style>

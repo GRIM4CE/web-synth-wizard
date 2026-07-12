@@ -94,6 +94,36 @@ Amplify bills per build minute (`$0.01/min` after the free tier), so the
   project-local npm cache (`.npm/`) that is persisted via Amplify's `cache`
   block alongside `node_modules`, so dependency installs resolve from cache
   instead of re-downloading from the registry.
+- **Vite's gzip-size report is disabled** (`build.reportCompressedSize: false`
+  in `vite.config.ts`) — it is build-time-only diagnostics with no effect on
+  the emitted bundle.
+
+Once the per-build work is this small, the dominant cost driver is the *number*
+of builds, not the duration of each. The levers below live in the Amplify
+console/API (they cannot be set in `amplify.yml`) and are where the remaining
+savings are:
+
+- **Skip builds for doc-only changes.** In the Amplify console under
+  **App settings → Build settings → Ignore build settings**, add a command that
+  cancels the build when a push touches only Markdown files. Amplify skips the
+  build when the command exits `0` and proceeds when it exits non-zero:
+
+  ```bash
+  git rev-parse HEAD^ >/dev/null 2>&1 && git diff --quiet HEAD^ HEAD -- ':(exclude)*.md' || exit 1
+  ```
+
+  This runs *before* install, so a docs-only push (e.g. editing this file)
+  costs zero build minutes and leaves the previous deploy live.
+- **Review PR preview and branch auto-builds.** Preview builds fire on every
+  push to every open PR and are typically the largest slice of the bill.
+  Under **Hosting → Previews**, disable them or scope them to specific
+  branches, and confirm auto-build is enabled only for `main`.
+- **Right-size the build instance.** The default Amplify compute class is
+  larger than a static Vue SPA needs; a smaller instance lowers the per-minute
+  rate (**App settings → Build settings**).
+- **Batch pushes to `main`.** Amplify builds once per push regardless of commit
+  count, so squash-merging PRs instead of pushing many small commits directly
+  reduces the total number of builds.
 
 ## Caching Strategy
 

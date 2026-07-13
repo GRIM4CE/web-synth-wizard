@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  import { ref } from 'vue'
   import WebVCO from './components/WebVCO.vue';
   import WebVCF from './components/WebVCF.vue';
   import WebVCA from './components/WebVCA.vue';
@@ -11,6 +12,28 @@
 
   const { startAudioContext, suspendAudioContext } = useAudioContext()
   const canUseAudioContext = 'AudioContext' in window
+
+  // Tabbed cards (mobile only). On desktop every panel is shown at once, so the
+  // tab bar is hidden via CSS and the active tab only drives the mobile view.
+  const tabs = [
+    { id: 'clock', label: 'Clock' },
+    { id: 'sequencer', label: 'Sequencer' },
+    { id: 'vco', label: 'VCO' },
+    { id: 'vcf', label: 'VCF' },
+    { id: 'vca', label: 'VCA' }
+  ]
+
+  const activeTab = ref('clock')
+  const tabRefs = ref<HTMLButtonElement[]>([])
+
+  const onTabKeydown = (event: KeyboardEvent, index: number) => {
+    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return
+    event.preventDefault()
+    const direction = event.key === 'ArrowRight' ? 1 : -1
+    const nextIndex = (index + direction + tabs.length) % tabs.length
+    activeTab.value = tabs[nextIndex].id
+    tabRefs.value[nextIndex]?.focus()
+  }
 </script>
 
 <template>
@@ -52,19 +75,69 @@
       </div>
     </section>
 
-    <section class="section">
+    <nav class="synth-tabs" role="tablist" aria-label="Synth modules">
+      <button
+        v-for="(tab, index) in tabs"
+        :key="tab.id"
+        ref="tabRefs"
+        class="synth-tab"
+        :class="{ 'is-active': activeTab === tab.id }"
+        type="button"
+        role="tab"
+        :id="`tab-${tab.id}`"
+        :aria-selected="activeTab === tab.id"
+        :aria-controls="`panel-${tab.id}`"
+        :tabindex="activeTab === tab.id ? 0 : -1"
+        @click="activeTab = tab.id"
+        @keydown="onTabKeydown($event, index)"
+      >
+        {{ tab.label }}
+      </button>
+    </nav>
+
+    <section
+      class="section synth-panel"
+      :class="{ 'is-active': activeTab === 'clock' }"
+      id="panel-clock"
+      role="tabpanel"
+      aria-labelledby="tab-clock"
+    >
        <WebClock />
     </section>
-    <section class="section web-sequencer">
+    <section
+      class="section web-sequencer synth-panel"
+      :class="{ 'is-active': activeTab === 'sequencer' }"
+      id="panel-sequencer"
+      role="tabpanel"
+      aria-labelledby="tab-sequencer"
+    >
        <WebSequencer />
     </section>
-    <section class="section">
+    <section
+      class="section synth-panel"
+      :class="{ 'is-active': activeTab === 'vco' }"
+      id="panel-vco"
+      role="tabpanel"
+      aria-labelledby="tab-vco"
+    >
       <WebVCO/>
     </section>
-    <section class="section">
+    <section
+      class="section synth-panel"
+      :class="{ 'is-active': activeTab === 'vcf' }"
+      id="panel-vcf"
+      role="tabpanel"
+      aria-labelledby="tab-vcf"
+    >
       <WebVCF/>
     </section>
-    <section class="section">
+    <section
+      class="section synth-panel"
+      :class="{ 'is-active': activeTab === 'vca' }"
+      id="panel-vca"
+      role="tabpanel"
+      aria-labelledby="tab-vca"
+    >
       <WebVCA/>
     </section>
   </main>
@@ -196,5 +269,58 @@
 
 .stop-button:hover {
   background-color: transparent;
+}
+
+/* Tabbed cards — mobile only. Hidden on desktop where the grid shows everything. */
+.synth-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: 0.75rem 0;
+  background: var(--color-background);
+
+  @include md {
+    display: none;
+  }
+}
+
+.synth-tab {
+  flex: 1 1 auto;
+  min-width: 4rem;
+  padding: 0.6rem 0.5rem;
+  color: var(--color-text);
+  background-color: var(--color-background-mute);
+  border: 2px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+}
+
+.synth-tab:hover {
+  border-color: var(--grey-soft);
+}
+
+.synth-tab.is-active {
+  color: var(--color-heading);
+  border-color: var(--blue);
+}
+
+/* Below the md breakpoint (48rem) show only the active panel, styled as a card. */
+@media (max-width: 47.99rem) {
+  .synth-panel {
+    padding: 1.25rem 1rem;
+    border: 1px solid var(--color-background-mute);
+    border-radius: 8px;
+    background: var(--color-background-soft);
+  }
+
+  .synth-panel:not(.is-active) {
+    display: none;
+  }
 }
 </style>

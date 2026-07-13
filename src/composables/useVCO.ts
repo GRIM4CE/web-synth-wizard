@@ -10,23 +10,31 @@ const calculateFrequencyForNoteInKey = (keyOffsetFromC: number, octave: number, 
 }
 
 export const useVCO = () => {
-    const createOscillator = ({
-        audioContext, 
-        oscillatorSettings, 
-        stepNote,          
-        selectedMusicalKey, 
+    // Resolve the frequency for a step, honouring quantisation. Split out from
+    // createOscillator so a persistent (monophonic) voice can be retuned in place
+    // without allocating a new oscillator each step.
+    const getFrequency = ({
+        oscillatorSettings,
+        stepNote,
+        selectedMusicalKey,
         selectedOctave,
         quantize
-    }: CreateOscillatorParams): OscillatorNode => {
-        const oscillator = audioContext.createOscillator();
+    }: CreateOscillatorParams): number => {
         let frequency = Number(oscillatorSettings.baseFrequency) * Math.pow(2, stepNote / 12);
 
         if (quantize.value && selectedMusicalKey) {
             frequency = quantizeNote(selectedMusicalKey.value, selectedOctave.value, stepNote);
         }
 
+        return frequency
+    };
+
+    const createOscillator = (params: CreateOscillatorParams): OscillatorNode => {
+        const { audioContext, oscillatorSettings } = params
+        const oscillator = audioContext.createOscillator();
+
         oscillator.type = oscillatorSettings.type
-        oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+        oscillator.frequency.setValueAtTime(getFrequency(params), audioContext.currentTime);
         return oscillator
     };
 
@@ -46,5 +54,5 @@ export const useVCO = () => {
         return quantizedFrequency
     }
 
-    return { createOscillator };
+    return { createOscillator, getFrequency };
 }

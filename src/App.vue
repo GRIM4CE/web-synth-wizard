@@ -24,8 +24,26 @@
     fx: WebEffects
   }
 
-  const { startAudioContext, suspendAudioContext } = useAudioContext()
+  const { startAudioContext, suspendAudioContext, audioContext, isRecording, recordingSeconds, startRecording, stopRecording } = useAudioContext()
   const canUseAudioContext = 'AudioContext' in window
+
+  // One button records and exports: start a take, click again to download it
+  // as a .wav. Recording silence is pointless, so activate the synth first if
+  // it isn't running yet.
+  const toggleRecording = async () => {
+    if (isRecording.value) {
+      stopRecording()
+      return
+    }
+    if (!audioContext.value) await startAudioContext()
+    await startRecording()
+  }
+
+  const formatRecordingTime = (totalSeconds: number) => {
+    const minutes = Math.floor(totalSeconds / 60)
+    const seconds = String(totalSeconds % 60).padStart(2, '0')
+    return `${minutes}:${seconds}`
+  }
 
   // Tabbed cards on every viewport, so the oscilloscope in the header stays on
   // screen while any module is edited. Only the selected panel is shown.
@@ -87,6 +105,14 @@
         <div class="utility-button-wrapper">
           <button class="button" @click="startAudioContext()">Activate Synth</button>
           <button class="button stop-button" @click="suspendAudioContext()">Stop Synth</button>
+          <button
+            class="button record-button"
+            :class="{ 'is-recording': isRecording }"
+            :aria-pressed="isRecording"
+            @click="toggleRecording()"
+          >
+            {{ isRecording ? `Export .wav (${formatRecordingTime(recordingSeconds)})` : 'Record .wav' }}
+          </button>
         </div>
 
         <WebPresets class="main-head-presets" />
@@ -271,6 +297,34 @@
 
 .stop-button:hover {
   background-color: transparent;
+}
+
+.record-button {
+  background-color: #e05555;
+  border-color: #e05555;
+}
+
+.record-button:hover {
+  background-color: transparent;
+}
+
+/* While a take is running the button stays hollow with a pulsing border so
+   the armed state is obvious at a glance. */
+.record-button.is-recording {
+  background-color: transparent;
+  animation: record-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes record-pulse {
+  50% {
+    border-color: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .record-button.is-recording {
+    animation: none;
+  }
 }
 
 /* Tab bar on every viewport, sticky so switching modules is always at hand. */

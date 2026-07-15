@@ -106,6 +106,7 @@ export const usePresets = () => {
       ...preset.oscillatorSettings,
       pulseWidth: preset.oscillatorSettings.pulseWidth ?? 0.5,
       engine: preset.oscillatorSettings.engine ?? 'oscillator',
+      resonatorModel: preset.oscillatorSettings.resonatorModel ?? 'string',
       damping: preset.oscillatorSettings.damping ?? 0.5,
       structure: preset.oscillatorSettings.structure ?? 0,
       brightness: preset.oscillatorSettings.brightness ?? 1,

@@ -50,13 +50,19 @@ export type UseSequancerParams = {
 // modeled plucked-string voice (Karplus-Strong, in an AudioWorklet).
 export type VoiceEngine = 'oscillator' | 'voice'
 
+// Which resonator the voice engine excites, mirroring Mutable Instruments
+// Rings' three resonator types: a non-linear/inharmonic string, a plucked
+// string coupled to sympathetic strings, or a modal (filter bank) resonator.
+export type ResonatorModel = 'string' | 'sympathetic' | 'modal'
+
 export type OscillatorSettings = {
     type: OscillatorType,
     baseFrequency: number,
     pulseWidth: number, // Duty cycle for square waves (0.05 to 0.95, 0.5 = symmetric)
     engine: VoiceEngine,
+    resonatorModel: ResonatorModel, // Voice engine resonator type (Rings-style model selection)
     damping: number, // Voice engine string damping (0 = bright/long ring, 1 = dark/fast decay)
-    structure: number, // Voice engine inharmonicity (0 = pure string, 1 = metallic/bell-like)
+    structure: number, // Voice engine structure (string: inharmonicity, sympathetic: chord, modal: stiffness)
     brightness: number, // Voice engine excitation brightness (0 = dull thump, 1 = raw noise burst)
     position: number // Voice engine pluck position (0 = at the bridge, 1 = mid-string)
 }

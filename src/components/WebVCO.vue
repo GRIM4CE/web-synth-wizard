@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, watch} from "vue"
+import { ref, computed, watch} from "vue"
 import { useAudioContext } from '@/composables/useAudioContext';
 import DSlider from './DSlider.vue'
 import type { MusicalKey, Octaves } from "@/types"
@@ -14,9 +14,25 @@ const waves = ["sawtooth", "sine", "square", "triangle"];
 const keys = [ "A", "A#", "B", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#"]
 const octaves = [1, 2, 3, 4, 5, 6, 7]
 
+// The voice engine's resonator models, mirroring Mutable Instruments Rings'
+// resonator types.
+const resonatorModels = [
+  { value: 'string', label: 'inharmonic string' },
+  { value: 'sympathetic', label: 'sympathetic strings' },
+  { value: 'modal', label: 'modal' }
+] as const
+
+// Structure means something different per resonator model (Rings does the
+// same: one knob, re-interpreted by the selected model).
+const structureHints = {
+  string: 'inharmonicity: low = pure string, high = metallic',
+  sympathetic: 'chord: which intervals the sympathetic strings are tuned to',
+  modal: 'stiffness: low = harmonic partials, high = bell-like'
+} as const
+
 // The voice engine's tone controls, modeled after Mutable Instruments Rings'
 // resonator macro-parameters. Each maps to an AudioParam on the worklet.
-const voiceControls = [
+const voiceControls = computed(() => [
   {
     key: 'damping',
     label: 'Damping',
@@ -25,7 +41,7 @@ const voiceControls = [
   {
     key: 'structure',
     label: 'Structure',
-    hint: 'inharmonicity: low = pure string, high = metallic'
+    hint: structureHints[oscillatorSettings.value.resonatorModel]
   },
   {
     key: 'brightness',
@@ -37,7 +53,7 @@ const voiceControls = [
     label: 'Position',
     hint: 'pluck point: low = at the bridge, high = mid-string'
   }
-] as const
+] as const)
 
 const type = ref(oscillatorSettings.value.type)
 const baseFrequency = ref(oscillatorSettings.value.baseFrequency)
@@ -57,9 +73,11 @@ watch(type, (newTypeValue: OscillatorType) => {
 // Push pulse-width changes onto the live comparator (no-op until activated).
 watch(() => oscillatorSettings.value.pulseWidth, () => applyPulseWidth());
 
-// Push voice tone changes onto the live physical voice (no-op until activated).
+// Push voice tone and resonator model changes onto the live physical voice
+// (no-op until activated).
+const voiceControlKeys = ['resonatorModel', 'damping', 'structure', 'brightness', 'position'] as const
 watch(
-  voiceControls.map((control) => () => oscillatorSettings.value[control.key]),
+  voiceControlKeys.map((key) => () => oscillatorSettings.value[key]),
   () => applyVoiceSettings()
 );
 
@@ -97,6 +115,15 @@ watch(selectedOctave, (newSelectedOctave: Octaves) => {
           <label for="wave-select">Wave:</label>
           <select v-model="type" name="waves" id="wave-select">
             <option v-for="wave in waves" :key="wave" :value="wave">{{ wave }}</option>
+          </select>
+        </div>
+
+        <div class="web-vco-field" v-if="oscillatorSettings.engine === 'voice'">
+          <label for="resonator-select">Resonator:</label>
+          <select v-model="oscillatorSettings.resonatorModel" name="resonators" id="resonator-select">
+            <option v-for="model in resonatorModels" :key="model.value" :value="model.value">
+              {{ model.label }}
+            </option>
           </select>
         </div>
 

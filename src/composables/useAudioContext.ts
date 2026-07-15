@@ -1,5 +1,6 @@
 import { useAudioContextManager } from './useAudioContextManager';
 import { useSequencer  } from './useSequencer';
+import { useRecorder } from './useRecorder';
 import type { Step } from "@/types"
 import type { MusicalKey, Octaves } from "@/types"
 
@@ -7,6 +8,7 @@ import { notes } from "@/utils/config"
 
 const { initSynth, clock, timeDivision, audioContext, gainNode, analyserNode, filterEnabled, filterEnvelopeEnabled, vcaEnvelopeEnabled, filterNode, oscillatorSettings, filterSettings, filterEnvelope, vcaEnvelope, selectedMusicalKey, selectedOctave, quantize, effectsInputNode, delayNode, delayEnabled, delaySettings, applyDelaySettings, lfoSettings, applyLfoSettings, voiceOscillator, physicalVoiceNode, tremoloNode, preFxTapNode, masterOutNode, scopeSource, pulseInputNode, vcoTapNode, applyPulseWidth, applyVoiceSettings } = useAudioContextManager()
 const { steps, startSequencer, stopSequencer, sequencerMode, turingProbability, turingSteps, setTuringLength, noteOn, noteOff, liveNoteFrequency, stepFrequency, setStepCount, randomizeNotes, randomizeGates, randomizeSteps } = useSequencer({clock, timeDivision, audioContext, gainNode, analyserNode, preFxTapNode, pulseInputNode, vcoTapNode, tremoloNode, voiceOscillator, physicalVoiceNode, filterEnabled, filterEnvelopeEnabled, vcaEnvelopeEnabled, filterNode, filterEnvelope, vcaEnvelope, oscillatorSettings, selectedMusicalKey, selectedOctave, quantize })
+const { isRecording, recordingSeconds, startRecording, stopRecording } = useRecorder()
 
 
 export const useAudioContext = () => {
@@ -38,5 +40,5 @@ export const useAudioContext = () => {
         stopSequencer()
     };
     
-    return { clock, timeDivision, audioContext, gainNode, analyserNode, filterEnabled, filterEnvelopeEnabled, vcaEnvelopeEnabled, filterNode, oscillatorSettings, filterSettings, vcaEnvelope, filterEnvelope, steps, updateStepValue, startAudioContext, suspendAudioContext, calculateFrequency, selectedMusicalKey, selectedOctave, quantize, delayNode, delayEnabled, delaySettings, applyDelaySettings, lfoSettings, applyLfoSettings, scopeSource, effectsInputNode, masterOutNode, applyPulseWidth, applyVoiceSettings, sequencerMode, turingProbability, turingSteps, setTuringLength, noteOn, noteOff, liveNoteFrequency, stepFrequency, setStepCount, randomizeNotes, randomizeGates, randomizeSteps};
+    return { clock, timeDivision, audioContext, gainNode, analyserNode, filterEnabled, filterEnvelopeEnabled, vcaEnvelopeEnabled, filterNode, oscillatorSettings, filterSettings, vcaEnvelope, filterEnvelope, steps, updateStepValue, startAudioContext, suspendAudioContext, calculateFrequency, selectedMusicalKey, selectedOctave, quantize, delayNode, delayEnabled, delaySettings, applyDelaySettings, lfoSettings, applyLfoSettings, scopeSource, effectsInputNode, masterOutNode, applyPulseWidth, applyVoiceSettings, sequencerMode, turingProbability, turingSteps, setTuringLength, noteOn, noteOff, liveNoteFrequency, stepFrequency, setStepCount, randomizeNotes, randomizeGates, randomizeSteps, isRecording, recordingSeconds, startRecording, stopRecording};
 }

@@ -42,6 +42,7 @@ OscillatorNode → GainNode (VCA) → BiquadFilterNode (VCF) → AudioContext.de
   - `useVCO.ts` — Oscillator creation and note quantization
   - `usePhysicalVoice.ts` — physical modeling AudioWorklet, the VCO's "voice" engine: three Rings-style resonator models (inharmonic Karplus-Strong string, sympathetic strings, modal filter bank)
   - `useEnvelope.ts` — ADSR envelope generators for VCA and VCF
+  - `useRecorder.ts` — WAV export: AudioWorklet tap on the master output, encoded via `src/utils/wavEncoder.ts`
 - `src/components/` — Vue components for each synth module
 - `src/types/` — TypeScript type definitions
 - `src/utils/` — Musical note config and helper functions

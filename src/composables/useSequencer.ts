@@ -164,24 +164,37 @@ export const useSequencer = ({
         filterNode.value.frequency.setValueAtTime(filterEnvelope.envelope.value.frequency, now);
     });
 
-    // With the VCA envelope off the amp is a plain gate that snaps between the
-    // panel gain and silence. The snap rides a short ramp because an instant
-    // jump on a gain node clicks audibly.
-    const GATE_RAMP_SECONDS = 0.005;
-    function setGateLevel(level: number) {
+    // With the VCA envelope off the amp just sits open at the panel gain and
+    // lets the voice through: the oscillator drones, the physical voice rings
+    // whenever its exciter is struck. Level moves ride a short ramp because an
+    // instant jump on a gain node clicks audibly.
+    const AMP_RAMP_SECONDS = 0.005;
+    function setAmpLevel(level: number) {
         if (!gainNode.value || !audioContext.value) return;
         const now = audioContext.value.currentTime;
         const gainParam = gainNode.value.gain;
         gainParam.cancelScheduledValues(now);
         gainParam.setValueAtTime(Math.max(gainParam.value, 0.0001), now);
-        gainParam.exponentialRampToValueAtTime(Math.max(level, 0.0001), now + GATE_RAMP_SECONDS);
+        gainParam.exponentialRampToValueAtTime(Math.max(level, 0.0001), now + AMP_RAMP_SECONDS);
     }
 
-    // When the VCA envelope is switched off mid-note, cancel any in-flight
-    // ADSR ramp and pin the amp at the plain gate level for the current state.
+    // Switching the envelope off opens the amp immediately (cancelling any
+    // in-flight ADSR ramp); switching it back on closes the amp so the next
+    // gate's attack starts from the silence it anchors to, and clears
+    // voiceActive so that gate retriggers even mid-run.
     watch(vcaEnvelopeEnabled, (enabled) => {
-        if (enabled) return;
-        setGateLevel(voiceActive ? Number(vcaEnvelope.envelope.value.gain) : 0.0001);
+        if (enabled) {
+            setAmpLevel(0.0001);
+            voiceActive = false;
+        } else {
+            setAmpLevel(Number(vcaEnvelope.envelope.value.gain));
+        }
+    });
+
+    // With the amp held open, the gain slider is a live volume control.
+    watch(() => Number(vcaEnvelope.envelope.value.gain), (gain) => {
+        if (vcaEnvelopeEnabled.value) return;
+        setAmpLevel(gain);
     });
 
     // If the synth is (re)initialised the gain node is replaced, so the fresh node
@@ -291,8 +304,9 @@ export const useSequencer = ({
             if (vcaEnvelopeEnabled.value) {
                 vcaEnvelope.triggerAttack(gainNode.value, ctx, vcaEnvelope.envelope);
             } else {
-                // No envelope: the amp just opens to the panel gain.
-                setGateLevel(Number(vcaEnvelope.envelope.value.gain));
+                // No envelope: make sure the amp is open (the first note after
+                // an init or a stop finds it at the silent floor).
+                setAmpLevel(Number(vcaEnvelope.envelope.value.gain));
             }
             if (filterEnabled.value) {
                 if (filterEnvelopeEnabled.value) {
@@ -309,10 +323,10 @@ export const useSequencer = ({
     // Release the gate so the tone stops until the next note.
     function closeGate() {
         if (!voiceActive || !audioContext.value || !gainNode.value || !filterNode.value) return;
+        // With the envelope off the amp stays open through rests — the voice
+        // drones; only the filter envelope (if on) still responds to the gate.
         if (vcaEnvelopeEnabled.value) {
             vcaEnvelope.triggerRelease(gainNode.value, audioContext.value, vcaEnvelope.envelope);
-        } else {
-            setGateLevel(0.0001);
         }
         if (filterEnabled.value && filterEnvelopeEnabled.value) {
             filterEnvelope.triggerRelease(filterNode.value, audioContext.value, filterEnvelope.envelope);

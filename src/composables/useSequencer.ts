@@ -12,7 +12,9 @@ export const useSequencer = ({
     filterNode,
     gainNode,
     analyserNode,
-    effectsInputNode,
+    preFxTapNode,
+    tremoloNode,
+    voiceOscillator,
     filterEnabled,
     filterEnvelopeEnabled,
     filterEnvelope,
@@ -48,17 +50,24 @@ export const useSequencer = ({
     // filter is toggled) rather than every step, so we don't tear down and rebuild
     // the graph while audio is flowing — that rewiring is itself a source of clicks.
     function routeGraph() {
-        if (!gainNode.value || !filterNode.value || !analyserNode.value) return;
-        // The voice feeds the effects bus when one exists (its dry/wet paths end at
-        // the analyser); otherwise it goes straight to the analyser.
-        const output = effectsInputNode.value ?? analyserNode.value;
+        if (!gainNode.value || !filterNode.value || !preFxTapNode.value) return;
+        // Voice chain: VCA -> tremolo -> (filter) -> pre-effects tap. The tap
+        // feeds the effects bus, whose dry/wet paths end at the master output.
+        const output = preFxTapNode.value;
+        const tremolo = tremoloNode.value;
         gainNode.value.disconnect();
         filterNode.value.disconnect();
+        let source: AudioNode = gainNode.value;
+        if (tremolo) {
+            tremolo.disconnect();
+            gainNode.value.connect(tremolo);
+            source = tremolo;
+        }
         if (filterEnabled.value) {
-            gainNode.value.connect(filterNode.value);
+            source.connect(filterNode.value);
             filterNode.value.connect(output);
         } else {
-            gainNode.value.connect(output);
+            source.connect(output);
         }
         routed = true;
     }
@@ -115,6 +124,7 @@ export const useSequencer = ({
             }
             currentOscillator.disconnect();
             currentOscillator = null;
+            voiceOscillator.value = null;
         }
         voiceActive = false;
         if (gainNode.value && audioContext.value) {
@@ -159,6 +169,8 @@ export const useSequencer = ({
                 currentOscillator = createOscillator(params);
                 currentOscillator.connect(gainNode.value);
                 currentOscillator.start(ctx.currentTime);
+                // Publish the live voice so LFOs and the scope can attach to it.
+                voiceOscillator.value = currentOscillator;
             } else {
                 // Legato: retune the running voice (phase-continuous, so no click) and
                 // pick up any waveform change.

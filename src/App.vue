@@ -7,6 +7,7 @@
   import WebSequencer from './components/WebSequencer.vue';
   import WebOscilloscope from './components/WebOscilloscope.vue';
   import WebEffects from './components/WebEffects.vue';
+  import WebLFO from './components/WebLFO.vue';
   import WebPresets from './components/WebPresets.vue';
   import { useAudioContext } from "@/composables/useAudioContext"
   import logoPng from './assets/logo.png'
@@ -23,6 +24,7 @@
     { id: 'vco', label: 'VCO' },
     { id: 'vcf', label: 'VCF' },
     { id: 'vca', label: 'VCA' },
+    { id: 'lfo', label: 'LFO' },
     { id: 'fx', label: 'FX' }
   ]
 
@@ -146,6 +148,15 @@
       <WebVCA/>
     </section>
     <section
+      class="section web-lfo-panel synth-panel"
+      :class="{ 'is-active': activeTab === 'lfo' }"
+      id="panel-lfo"
+      role="tabpanel"
+      aria-labelledby="tab-lfo"
+    >
+      <WebLFO/>
+    </section>
+    <section
       class="section web-effects-panel synth-panel"
       :class="{ 'is-active': activeTab === 'fx' }"
       id="panel-fx"
@@ -191,9 +202,15 @@
   }
 }
 
+.web-lfo-panel {
+  @include md {
+    grid-column: span 2;
+  }
+}
+
 .web-effects-panel {
   @include md {
-    grid-column: span 3;
+    grid-column: span 1;
   }
 }
 

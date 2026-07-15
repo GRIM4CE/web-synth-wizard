@@ -10,9 +10,9 @@ export type Step = {
 
 export type MusicalKey = 'C' | 'C#' | 'D' | 'D#' | 'E' | 'F' | 'F#' | 'G' | 'G#' | 'A' | 'A#' | 'B'
 
-// What drives the voice: the step grid, live keyboard/MIDI input, or the
-// Turing machine's shift-register loop.
-export type SequencerMode = 'steps' | 'keyboard' | 'turing'
+// What drives the voice: the step grid, the computer keyboard, a MIDI
+// controller, or the Turing machine's shift-register loop.
+export type SequencerMode = 'steps' | 'keyboard' | 'midi' | 'turing'
 
 // One slot of the Turing machine's looping register: a raw voltage (0..1,
 // spanning one octave above the base frequency) and whether its gate fires.
@@ -38,6 +38,7 @@ export type UseSequancerParams = {
     physicalVoiceNode: Ref<AudioWorkletNode | null>,
     filterEnabled: Ref<boolean>,
     filterEnvelopeEnabled: Ref<boolean>,
+    vcaEnvelopeEnabled: Ref<boolean>,
     filterEnvelope: FilterEnvelopeObject,
     vcaEnvelope: VcaEnvelopeObject,
     oscillatorSettings: Ref<OscillatorSettings>
@@ -155,6 +156,7 @@ export type SynthPreset = {
     filterEnvelopeEnabled: boolean,
     filterSettings: FilterSettings,
     filterEnvelope: FilterEnvelope,
+    vcaEnvelopeEnabled?: boolean, // Optional: presets saved before the VCA envelope toggle existed lack this
     vcaEnvelope: VcaEnvelope,
     delayEnabled: boolean,
     delaySettings: DelaySettings,

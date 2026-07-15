@@ -26,7 +26,8 @@ const {
 
 const modes: { id: SequencerMode, label: string }[] = [
   { id: 'steps', label: 'Steps' },
-  { id: 'keyboard', label: 'Keyboard / MIDI' },
+  { id: 'keyboard', label: 'Keyboard' },
+  { id: 'midi', label: 'MIDI' },
   { id: 'turing', label: 'Turing' }
 ]
 
@@ -97,10 +98,20 @@ const releaseAllLiveNotes = () => {
   liveIds.clear()
 }
 
+// In keyboard mode the keys must play no matter what on the page happens to
+// hold focus — a slider, a checkbox, a select, a tab. Only genuine text entry
+// keeps the keys to itself, since letters there are being typed, not played.
+const isTypingTarget = (target: EventTarget | null) => {
+  const el = target as HTMLElement | null
+  if (!el) return false
+  if (el.isContentEditable || el.tagName === 'TEXTAREA') return true
+  if (el.tagName !== 'INPUT') return false
+  return !['range', 'checkbox', 'radio', 'button', 'color'].includes((el as HTMLInputElement).type)
+}
+
 const onKeyDown = (event: KeyboardEvent) => {
   if (event.repeat || event.metaKey || event.ctrlKey || event.altKey) return
-  const target = event.target as HTMLElement | null
-  if (target && ['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName)) return
+  if (isTypingTarget(event.target)) return
   const semitone = KEY_TO_SEMITONE[event.key.toLowerCase()]
   if (semitone === undefined) return
   event.preventDefault()
@@ -121,7 +132,7 @@ let midiAccess: MIDIAccess | null = null
 // lib.dom types onmidimessage as a plain Event handler; narrow to reach .data.
 const onMidiMessage = (event: Event) => {
   const data = (event as MIDIMessageEvent).data
-  if (sequencerMode.value !== 'keyboard' || !data) return
+  if (sequencerMode.value !== 'midi' || !data) return
   const [status, note, velocity] = data
   const command = status & 0xf0
   const id = MIDI_ID_OFFSET + note
@@ -154,9 +165,9 @@ const connectMidi = async () => {
 
 const midiStatusLabel = computed(() => {
   switch (midiStatus.value) {
-    case 'unsupported': return 'not supported by this browser (computer keyboard still works)'
+    case 'unsupported': return 'not supported by this browser'
     case 'connected': return 'connected — play your controller'
-    case 'error': return 'access denied (computer keyboard still works)'
+    case 'error': return 'access denied — check the browser permission'
     default: return 'connecting…'
   }
 })
@@ -164,16 +175,20 @@ const midiStatusLabel = computed(() => {
 // The component stays mounted while other module tabs are shown, so live play
 // keeps working while tweaking the filter — the listeners just follow the mode.
 watch(sequencerMode, (mode) => {
+  // Whatever the previous mode left held down is released on any switch.
+  releaseAllLiveNotes()
   if (mode === 'keyboard') {
     window.addEventListener('keydown', onKeyDown)
     window.addEventListener('keyup', onKeyUp)
-    window.addEventListener('blur', releaseAllLiveNotes)
-    connectMidi()
   } else {
     window.removeEventListener('keydown', onKeyDown)
     window.removeEventListener('keyup', onKeyUp)
+  }
+  if (mode === 'midi') connectMidi()
+  if (mode === 'keyboard' || mode === 'midi') {
+    window.addEventListener('blur', releaseAllLiveNotes)
+  } else {
     window.removeEventListener('blur', releaseAllLiveNotes)
-    releaseAllLiveNotes()
   }
 }, { immediate: true })
 
@@ -254,8 +269,24 @@ onBeforeUnmount(() => {
         >
             <p class="web-sequencer-hint">
                 Play live with your computer keyboard: <strong>A W S E D F T G Y H U J K O L P ;</strong>
-                walks up chromatically from the key and octave set on the VCO. A MIDI controller
-                works too — notes are gated by your hands instead of the clock.
+                walks up chromatically from the key and octave set on the VCO. The keys play from
+                anywhere on the page — notes are gated by your hands instead of the clock.
+            </p>
+            <p class="web-sequencer-note-display" aria-live="polite">
+                Last note: <strong>{{ lastPlayed || '—' }}</strong>
+            </p>
+        </div>
+
+        <div
+            v-else-if="sequencerMode === 'midi'"
+            class="web-sequencer-panel"
+            id="sequencer-panel-midi"
+            role="tabpanel"
+            aria-labelledby="sequencer-mode-midi"
+        >
+            <p class="web-sequencer-hint">
+                Play live from a MIDI controller — notes are gated by your hands instead of the
+                clock. Notes play at their true MIDI pitch, independent of the VCO's key and octave.
             </p>
             <p class="web-sequencer-midi-status">MIDI: {{ midiStatusLabel }}</p>
             <p class="web-sequencer-note-display" aria-live="polite">

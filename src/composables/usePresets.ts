@@ -100,12 +100,16 @@ export const usePresets = () => {
     clock.value = preset.clock
     timeDivision.value = preset.timeDivision
     // Presets saved before pulse width / the voice engine existed default to a
-    // symmetric square on the oscillator engine.
+    // symmetric square on the oscillator engine; voice tone controls added
+    // later default to the classic pluck (raw noise burst, no dispersion).
     oscillatorSettings.value = {
       ...preset.oscillatorSettings,
       pulseWidth: preset.oscillatorSettings.pulseWidth ?? 0.5,
       engine: preset.oscillatorSettings.engine ?? 'oscillator',
-      damping: preset.oscillatorSettings.damping ?? 0.5
+      damping: preset.oscillatorSettings.damping ?? 0.5,
+      structure: preset.oscillatorSettings.structure ?? 0,
+      brightness: preset.oscillatorSettings.brightness ?? 1,
+      position: preset.oscillatorSettings.position ?? 0
     }
     applyPulseWidth()
     applyVoiceSettings()

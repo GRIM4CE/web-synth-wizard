@@ -52,7 +52,10 @@ const maxGain = .1
 
 .web-vca-slider-wrapper {
   display: flex;
-  column-gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
   text-align: center;
+  max-width: 100%;
 }
 </style>

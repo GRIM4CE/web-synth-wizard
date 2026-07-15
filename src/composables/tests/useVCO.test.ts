@@ -24,7 +24,7 @@ describe('useVCO', () => {
 
     const result = createOscillator({
       audioContext: mock as unknown as AudioContext,
-      oscillatorSettings: { type: 'sawtooth', baseFrequency: 440, pulseWidth: 0.5, engine: 'oscillator', damping: 0.5 },
+      oscillatorSettings: { type: 'sawtooth', baseFrequency: 440, pulseWidth: 0.5, engine: 'oscillator', damping: 0.5, structure: 0, brightness: 1, position: 0 },
       stepNote: 0,
       selectedMusicalKey: ref<MusicalKey>('C'),
       selectedOctave: ref<1 | 2 | 3 | 4 | 5 | 6 | 7>(4),
@@ -41,7 +41,7 @@ describe('useVCO', () => {
 
     createOscillator({
       audioContext: mock as unknown as AudioContext,
-      oscillatorSettings: { type: 'sine', baseFrequency: 440, pulseWidth: 0.5, engine: 'oscillator', damping: 0.5 },
+      oscillatorSettings: { type: 'sine', baseFrequency: 440, pulseWidth: 0.5, engine: 'oscillator', damping: 0.5, structure: 0, brightness: 1, position: 0 },
       stepNote: 0,
       selectedMusicalKey: ref<MusicalKey>('C'),
       selectedOctave: ref<1 | 2 | 3 | 4 | 5 | 6 | 7>(4),
@@ -59,7 +59,7 @@ describe('useVCO', () => {
     const { createOscillator } = useVCO()
 
     const baseParams = {
-      oscillatorSettings: { type: 'sine' as OscillatorType, baseFrequency: 440, pulseWidth: 0.5, engine: 'oscillator' as const, damping: 0.5 },
+      oscillatorSettings: { type: 'sine' as OscillatorType, baseFrequency: 440, pulseWidth: 0.5, engine: 'oscillator' as const, damping: 0.5, structure: 0, brightness: 1, position: 0 },
       selectedMusicalKey: ref<MusicalKey>('C'),
       selectedOctave: ref<1 | 2 | 3 | 4 | 5 | 6 | 7>(4),
       quantize: ref(false),
@@ -80,7 +80,7 @@ describe('useVCO', () => {
     // Key C, octave 4, root note (stepNote 0) should quantize to C4 ≈ 261.63 Hz
     createOscillator({
       audioContext: mock as unknown as AudioContext,
-      oscillatorSettings: { type: 'sine', baseFrequency: 440, pulseWidth: 0.5, engine: 'oscillator', damping: 0.5 },
+      oscillatorSettings: { type: 'sine', baseFrequency: 440, pulseWidth: 0.5, engine: 'oscillator', damping: 0.5, structure: 0, brightness: 1, position: 0 },
       stepNote: 0,
       selectedMusicalKey: ref<MusicalKey>('C'),
       selectedOctave: ref<1 | 2 | 3 | 4 | 5 | 6 | 7>(4),
@@ -97,7 +97,7 @@ describe('useVCO', () => {
 
     createOscillator({
       audioContext: mock as unknown as AudioContext,
-      oscillatorSettings: { type: 'sine', baseFrequency: 440, pulseWidth: 0.5, engine: 'oscillator', damping: 0.5 },
+      oscillatorSettings: { type: 'sine', baseFrequency: 440, pulseWidth: 0.5, engine: 'oscillator', damping: 0.5, structure: 0, brightness: 1, position: 0 },
       stepNote: 0,
       selectedMusicalKey: ref<MusicalKey>('A'),
       selectedOctave: ref<1 | 2 | 3 | 4 | 5 | 6 | 7>(4),
@@ -114,7 +114,7 @@ describe('useVCO', () => {
     const { createOscillator } = useVCO()
 
     const baseParams = {
-      oscillatorSettings: { type: 'sine' as OscillatorType, baseFrequency: 440, pulseWidth: 0.5, engine: 'oscillator' as const, damping: 0.5 },
+      oscillatorSettings: { type: 'sine' as OscillatorType, baseFrequency: 440, pulseWidth: 0.5, engine: 'oscillator' as const, damping: 0.5, structure: 0, brightness: 1, position: 0 },
       selectedMusicalKey: ref<MusicalKey>('C'),
       stepNote: 0,
       quantize: ref(true),

@@ -140,7 +140,10 @@ watch(() => filterEnvelope.envelope.value.frequency, (newFrequency) => {
 
 .web-vcf-slider-wrapper {
   display: flex;
-  column-gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  max-width: 100%;
 }
 
 .web-vcf-slider {

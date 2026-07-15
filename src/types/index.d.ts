@@ -55,7 +55,10 @@ export type OscillatorSettings = {
     baseFrequency: number,
     pulseWidth: number, // Duty cycle for square waves (0.05 to 0.95, 0.5 = symmetric)
     engine: VoiceEngine,
-    damping: number // Voice engine string damping (0 = bright/long ring, 1 = dark/fast decay)
+    damping: number, // Voice engine string damping (0 = bright/long ring, 1 = dark/fast decay)
+    structure: number, // Voice engine inharmonicity (0 = pure string, 1 = metallic/bell-like)
+    brightness: number, // Voice engine excitation brightness (0 = dull thump, 1 = raw noise burst)
+    position: number // Voice engine pluck position (0 = at the bridge, 1 = mid-string)
 }
 
 export type FilterSettings = {

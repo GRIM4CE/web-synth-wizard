@@ -432,7 +432,10 @@ onBeforeUnmount(() => {
 
 .web-sequencer-register-slot {
     position: relative;
-    width: 12px;
+    /* Slots shrink to fit long registers on narrow screens instead of
+       overflowing (64 fixed-width bars are wider than a phone). */
+    flex: 0 1 12px;
+    min-width: 3px;
     height: 100%;
     background: var(--color-background-mute);
     border-radius: 2px;

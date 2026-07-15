@@ -4,14 +4,22 @@ import { usePhysicalVoice } from '@/composables/usePhysicalVoice'
 function createMockVoiceNode() {
   const frequencyParam = { setValueAtTime: vi.fn() }
   const dampingParam = { setValueAtTime: vi.fn() }
+  const structureParam = { setValueAtTime: vi.fn() }
+  const brightnessParam = { setValueAtTime: vi.fn() }
+  const positionParam = { setValueAtTime: vi.fn() }
   return {
     frequencyParam,
     dampingParam,
-    postMessage: vi.fn(),
+    structureParam,
+    brightnessParam,
+    positionParam,
     node: {
       parameters: new Map<string, unknown>([
         ['frequency', frequencyParam],
-        ['damping', dampingParam]
+        ['damping', dampingParam],
+        ['structure', structureParam],
+        ['brightness', brightnessParam],
+        ['position', positionParam]
       ]),
       port: { postMessage: vi.fn() }
     }
@@ -25,23 +33,39 @@ describe('usePhysicalVoice', () => {
     expect(node).toBeNull()
   })
 
-  it('schedules pitch and damping and excites the string on pluck', () => {
+  it('schedules pitch and tone controls and excites the string on pluck', () => {
     const { pluckVoice } = usePhysicalVoice()
     const mock = createMockVoiceNode()
 
-    pluckVoice(mock.node as unknown as AudioWorkletNode, 220, 0.4, 1.5)
+    pluckVoice(
+      mock.node as unknown as AudioWorkletNode,
+      220,
+      { damping: 0.4, structure: 0.25, brightness: 0.8, position: 0.3 },
+      1.5
+    )
 
     expect(mock.frequencyParam.setValueAtTime).toHaveBeenCalledWith(220, 1.5)
     expect(mock.dampingParam.setValueAtTime).toHaveBeenCalledWith(0.4, 1.5)
+    expect(mock.structureParam.setValueAtTime).toHaveBeenCalledWith(0.25, 1.5)
+    expect(mock.brightnessParam.setValueAtTime).toHaveBeenCalledWith(0.8, 1.5)
+    expect(mock.positionParam.setValueAtTime).toHaveBeenCalledWith(0.3, 1.5)
     expect(mock.node.port.postMessage).toHaveBeenCalledWith('pluck')
   })
 
-  it('clamps damping into the 0..1 range', () => {
+  it('clamps every tone control into the 0..1 range', () => {
     const { pluckVoice } = usePhysicalVoice()
     const mock = createMockVoiceNode()
 
-    pluckVoice(mock.node as unknown as AudioWorkletNode, 220, 4, 0)
+    pluckVoice(
+      mock.node as unknown as AudioWorkletNode,
+      220,
+      { damping: 4, structure: -1, brightness: 2, position: -0.5 },
+      0
+    )
 
     expect(mock.dampingParam.setValueAtTime).toHaveBeenCalledWith(1, 0)
+    expect(mock.structureParam.setValueAtTime).toHaveBeenCalledWith(0, 0)
+    expect(mock.brightnessParam.setValueAtTime).toHaveBeenCalledWith(1, 0)
+    expect(mock.positionParam.setValueAtTime).toHaveBeenCalledWith(0, 0)
   })
 })

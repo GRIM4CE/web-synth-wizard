@@ -125,7 +125,11 @@ export const usePresets = () => {
     // Presets saved before LFOs existed have no lfos entry; leave current state.
     if (preset.lfos) {
       lfoSettings.value.forEach((lfo, index) => {
-        if (preset.lfos && preset.lfos[index]) Object.assign(lfo, preset.lfos[index])
+        // Presets saved before clock sync existed lack sync/syncSteps; reset
+        // those to free-running defaults so stale state doesn't bleed through.
+        if (preset.lfos && preset.lfos[index]) {
+          Object.assign(lfo, { sync: false, syncSteps: 1 }, preset.lfos[index])
+        }
       })
       applyLfoSettings()
     }

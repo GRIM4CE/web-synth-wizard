@@ -10,6 +10,17 @@ export type Step = {
 
 export type MusicalKey = 'C' | 'C#' | 'D' | 'D#' | 'E' | 'F' | 'F#' | 'G' | 'G#' | 'A' | 'A#' | 'B'
 
+// What drives the voice: the step grid, live keyboard/MIDI input, or the
+// Turing machine's shift-register loop.
+export type SequencerMode = 'steps' | 'keyboard' | 'turing'
+
+// One slot of the Turing machine's looping register: a raw voltage (0..1,
+// spanning one octave above the base frequency) and whether its gate fires.
+export type TuringStep = {
+    voltage: number,
+    gate: boolean
+}
+
 export type TimeDivision = 1 | 2 | 4 | 8 | 16 | 32
 
 export type UseSequancerParams = {
@@ -70,7 +81,9 @@ export type LfoSettings = {
     enabled: boolean,
     target: LfoTarget,
     waveform: OscillatorType,
-    rate: number, // LFO frequency in Hz
+    sync: boolean, // true: rate follows the sequencer clock; false: free-running in Hz
+    rate: number, // Free-running LFO frequency in Hz (used when sync is off)
+    syncSteps: number, // Length of one LFO cycle in sequencer steps (used when sync is on)
     depth: number, // Modulation amount (0 to 1), scaled per target
 }
 

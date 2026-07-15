@@ -30,7 +30,9 @@ npm run format       # Prettier formatting
 ### Audio Graph
 
 ```
-OscillatorNode → GainNode (VCA) → BiquadFilterNode (VCF) → AudioContext.destination
+OscillatorNode (VCO 1, + optional detuned VCO 2/3) → GainNode (VCA) → tremolo →
+BiquadFilterNode (VCF) → FX chain (delay / reverb / compressor, user-orderable) →
+master out → AudioContext.destination
 ```
 
 ### Key Directories

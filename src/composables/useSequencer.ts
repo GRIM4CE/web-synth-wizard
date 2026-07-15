@@ -36,6 +36,10 @@ export const useSequencer = ({
     tremoloNode,
     voiceOscillator,
     physicalVoiceNode,
+    subOscillatorNodes,
+    subOscillatorGainNodes,
+    subOscillatorSettings,
+    lfoModulation,
     filterEnabled,
     filterEnvelopeEnabled,
     filterEnvelope,
@@ -68,6 +72,8 @@ export const useSequencer = ({
     // oscillator per step. This is what keeps overlapping long-release notes from
     // stacking up on the shared gain node and beating against each other.
     let currentOscillator: OscillatorNode | null = null;
+    // The stacked sub-oscillators (VCO 2/3) live and die with the main voice.
+    let currentSubOscillators: (OscillatorNode | null)[] = [];
     // Whether the amplifier gate is currently open (a note is sounding). Used to
     // hold sustain across contiguous active steps and only release on a rest.
     let voiceActive = false;
@@ -190,9 +196,22 @@ export const useSequencer = ({
         stopVoice();
     }
 
-    // Tear down just the oscillator (used when stopping, and when the physical
-    // voice engine takes over mid-sequence).
+    // Tear down just the oscillator stack (used when stopping, and when the
+    // physical voice engine takes over mid-sequence).
     function teardownOscillator() {
+        currentSubOscillators.forEach((subOscillator) => {
+            if (!subOscillator) return;
+            try {
+                subOscillator.stop();
+            } catch {
+                // Oscillator may already be stopped or its context closed.
+            }
+            subOscillator.disconnect();
+        });
+        if (currentSubOscillators.some(Boolean)) {
+            currentSubOscillators = [];
+            subOscillatorNodes.value = subOscillatorSettings.value.map(() => null);
+        }
         if (!currentOscillator) return;
         try {
             currentOscillator.stop();
@@ -203,6 +222,33 @@ export const useSequencer = ({
         currentOscillator = null;
         voiceOscillator.value = null;
         voiceWiring = null;
+    }
+
+    // Start the sub-oscillators alongside the main voice. They run for the
+    // whole sequence like the main oscillator; a disabled sub still runs but
+    // is silenced by its level gain (so enabling it mid-note is click-free).
+    function startSubOscillators(ctx: AudioContext, frequency: number) {
+        currentSubOscillators = subOscillatorSettings.value.map((settings, index) => {
+            const gain = subOscillatorGainNodes.value[index];
+            if (!gain) return null;
+            const subOscillator = ctx.createOscillator();
+            subOscillator.type = settings.type;
+            subOscillator.frequency.setValueAtTime(frequency, ctx.currentTime);
+            subOscillator.detune.setValueAtTime(settings.detune, ctx.currentTime);
+            subOscillator.connect(gain);
+            subOscillator.start(ctx.currentTime);
+            return subOscillator;
+        });
+        // Publish the live subs so LFOs can attach to their detune params.
+        subOscillatorNodes.value = [...currentSubOscillators];
+    }
+
+    // Retune the running subs to follow the main voice (their detune param
+    // keeps the offset, so only the base frequency moves).
+    function retuneSubOscillators(ctx: AudioContext, frequency: number) {
+        currentSubOscillators.forEach((subOscillator) => {
+            subOscillator?.frequency.setValueAtTime(frequency, ctx.currentTime);
+        });
     }
 
     // Silence and tear down the monophonic voice.
@@ -257,6 +303,7 @@ export const useSequencer = ({
             wireOscillator(currentOscillator);
             currentOscillator.frequency.setValueAtTime(frequency, ctx.currentTime);
             currentOscillator.start(ctx.currentTime);
+            startSubOscillators(ctx, frequency);
             // Publish the live voice so LFOs and the scope can attach to it.
             voiceOscillator.value = currentOscillator;
         } else {
@@ -264,10 +311,11 @@ export const useSequencer = ({
             // pick up any waveform change (including into/out of the pulse chain).
             wireOscillator(currentOscillator);
             currentOscillator.frequency.setValueAtTime(frequency, ctx.currentTime);
+            retuneSubOscillators(ctx, frequency);
         }
 
         if (!voiceActive) {
-            vcaEnvelope.triggerAttack(gainNode.value, ctx, vcaEnvelope.envelope);
+            vcaEnvelope.triggerAttack(gainNode.value, ctx, modulatedVcaEnvelope());
             if (filterEnabled.value) {
                 if (filterEnvelopeEnabled.value) {
                     filterEnvelope.triggerAttack(filterNode.value, ctx, filterEnvelope.envelope);
@@ -280,10 +328,32 @@ export const useSequencer = ({
         }
     }
 
+    const clamp01 = (value: number) => Math.min(Math.max(value, 0), 1);
+
+    // The VCA envelope as an LFO sees it right now: times are scaled
+    // multiplicatively (2^mod, so full depth swings 1/4x..4x) and sustain is
+    // shifted, sampled once per gate. Returns the stored envelope untouched
+    // (and unwrapped) when no envelope LFO is active.
+    function modulatedVcaEnvelope() {
+        const attackMod = lfoModulation('vcaAttack');
+        const decayMod = lfoModulation('vcaDecay');
+        const sustainMod = lfoModulation('vcaSustain');
+        const releaseMod = lfoModulation('vcaRelease');
+        if (!attackMod && !decayMod && !sustainMod && !releaseMod) return vcaEnvelope.envelope;
+        const base = vcaEnvelope.envelope.value;
+        return ref({
+            ...base,
+            attack: base.attack * Math.pow(2, attackMod),
+            decay: base.decay * Math.pow(2, decayMod),
+            sustain: clamp01(base.sustain + sustainMod),
+            release: base.release * Math.pow(2, releaseMod)
+        });
+    }
+
     // Release the gate so the tone stops until the next note.
     function closeGate() {
         if (!voiceActive || !audioContext.value || !gainNode.value || !filterNode.value) return;
-        vcaEnvelope.triggerRelease(gainNode.value, audioContext.value, vcaEnvelope.envelope);
+        vcaEnvelope.triggerRelease(gainNode.value, audioContext.value, modulatedVcaEnvelope());
         if (filterEnabled.value && filterEnvelopeEnabled.value) {
             filterEnvelope.triggerRelease(filterNode.value, audioContext.value, filterEnvelope.envelope);
         }
@@ -316,8 +386,10 @@ export const useSequencer = ({
         const slot = turingSteps.value[stepIndex % turingSteps.value.length];
         if (!slot) return;
 
-        // The dial is the chance this slot mutates as it comes around.
-        if (Math.random() < turingProbability.value) {
+        // The dial is the chance this slot mutates as it comes around; an LFO
+        // can push it around the dial's setting (sampled once per step).
+        const probability = clamp01(turingProbability.value + lfoModulation('turingProbability'));
+        if (Math.random() < probability) {
             const fresh = randomTuringStep();
             slot.voltage = fresh.voltage;
             slot.gate = fresh.gate;

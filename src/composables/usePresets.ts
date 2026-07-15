@@ -48,6 +48,15 @@ export const usePresets = () => {
     delayEnabled,
     delaySettings,
     applyDelaySettings,
+    reverbEnabled,
+    reverbSettings,
+    applyReverbSettings,
+    compressorEnabled,
+    compressorSettings,
+    applyCompressorSettings,
+    fxChainOrder,
+    applyFxChainOrder,
+    subOscillatorSettings,
     lfoSettings,
     applyLfoSettings,
     applyPulseWidth,
@@ -70,6 +79,12 @@ export const usePresets = () => {
     vcaEnvelope: { ...vcaEnvelope.envelope.value },
     delayEnabled: delayEnabled.value,
     delaySettings: { ...delaySettings.value },
+    reverbEnabled: reverbEnabled.value,
+    reverbSettings: { ...reverbSettings.value },
+    compressorEnabled: compressorEnabled.value,
+    compressorSettings: { ...compressorSettings.value },
+    fxChainOrder: [...fxChainOrder.value],
+    subOscillators: subOscillatorSettings.value.map((sub) => ({ ...sub })),
     lfos: lfoSettings.value.map((lfo) => ({ ...lfo })),
     steps: steps.value.map((step) => ({ ...step }))
   })
@@ -127,6 +142,26 @@ export const usePresets = () => {
     delayEnabled.value = preset.delayEnabled
     Object.assign(delaySettings.value, preset.delaySettings)
     applyDelaySettings()
+    // Presets saved before the reverb/compressor/chain-order existed fall back
+    // to those features' defaults (both effects off, delay-first order).
+    reverbEnabled.value = preset.reverbEnabled ?? false
+    Object.assign(reverbSettings.value, preset.reverbSettings ?? { decay: 2000, mix: 0.3 })
+    applyReverbSettings()
+    compressorEnabled.value = preset.compressorEnabled ?? false
+    Object.assign(
+      compressorSettings.value,
+      preset.compressorSettings ?? { threshold: -24, ratio: 4, attack: 5, release: 250, makeup: 0 }
+    )
+    applyCompressorSettings()
+    fxChainOrder.value = preset.fxChainOrder?.length ? [...preset.fxChainOrder] : ['delay', 'reverb', 'compressor']
+    applyFxChainOrder()
+    // Presets saved before VCO 2/3 existed keep the subs disabled at their
+    // defaults. Mutate in place so the manager's deep watcher pushes the new
+    // values onto any live nodes.
+    subOscillatorSettings.value.forEach((sub, index) => {
+      const saved = preset.subOscillators?.[index]
+      Object.assign(sub, saved ?? { enabled: false, type: 'sawtooth', detune: index === 0 ? 7 : -7, level: 0.5 })
+    })
     // Presets saved before LFOs existed have no lfos entry; leave current state.
     if (preset.lfos) {
       lfoSettings.value.forEach((lfo, index) => {
@@ -134,6 +169,10 @@ export const usePresets = () => {
         // those to free-running defaults so stale state doesn't bleed through.
         if (preset.lfos && preset.lfos[index]) {
           Object.assign(lfo, { sync: false, syncSteps: 1 }, preset.lfos[index])
+        } else {
+          // Presets saved when fewer LFO slots existed: switch the extras off
+          // so stale modulation doesn't bleed into the recalled sound.
+          lfo.enabled = false
         }
       })
       applyLfoSettings()

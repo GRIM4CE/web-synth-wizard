@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { lfoSyncRate, lfoSyncStepOptions } from '@/utils/config'
+import { lfoSyncRate, lfoSyncStepOptions, lfoWaveValue } from '@/utils/config'
 
 describe('lfoSyncRate', () => {
   it('matches the step rate when the cycle is one step', () => {
@@ -35,5 +35,37 @@ describe('lfoSyncStepOptions', () => {
     const values = lfoSyncStepOptions.map((option) => option.value)
     const sorted = [...values].sort((a, b) => a - b)
     expect(values).toEqual(sorted)
+  })
+})
+
+describe('lfoWaveValue', () => {
+  it('traces a sine over one cycle', () => {
+    expect(lfoWaveValue('sine', 0)).toBeCloseTo(0)
+    expect(lfoWaveValue('sine', 0.25)).toBeCloseTo(1)
+    expect(lfoWaveValue('sine', 0.5)).toBeCloseTo(0)
+    expect(lfoWaveValue('sine', 0.75)).toBeCloseTo(-1)
+  })
+
+  it('traces a triangle over one cycle', () => {
+    expect(lfoWaveValue('triangle', 0)).toBeCloseTo(-1)
+    expect(lfoWaveValue('triangle', 0.25)).toBeCloseTo(0)
+    expect(lfoWaveValue('triangle', 0.5)).toBeCloseTo(1)
+    expect(lfoWaveValue('triangle', 0.75)).toBeCloseTo(0)
+  })
+
+  it('traces a sawtooth ramp from -1 to 1', () => {
+    expect(lfoWaveValue('sawtooth', 0)).toBeCloseTo(-1)
+    expect(lfoWaveValue('sawtooth', 0.5)).toBeCloseTo(0)
+    expect(lfoWaveValue('sawtooth', 0.999)).toBeCloseTo(1, 1)
+  })
+
+  it('flips a square at half phase', () => {
+    expect(lfoWaveValue('square', 0.25)).toBe(1)
+    expect(lfoWaveValue('square', 0.75)).toBe(-1)
+  })
+
+  it('wraps phases outside 0..1 onto the cycle', () => {
+    expect(lfoWaveValue('sine', 2.25)).toBeCloseTo(lfoWaveValue('sine', 0.25))
+    expect(lfoWaveValue('sawtooth', -0.5)).toBeCloseTo(lfoWaveValue('sawtooth', 0.5))
   })
 })

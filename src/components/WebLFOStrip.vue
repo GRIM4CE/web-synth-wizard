@@ -3,13 +3,14 @@ import { computed } from 'vue'
 import { useAudioContext } from '@/composables/useAudioContext'
 import DSlider from './DSlider.vue'
 import DCheckbox from './DCheckbox.vue'
+import { lfoSyncRate, lfoSyncStepOptions } from '@/utils/config'
 import type { LfoTarget } from '@/types'
 
 const props = defineProps<{ index: number }>()
 
 // The strip edits the shared settings directly (the prop only carries the
 // index), so presets and the audio layer see the same objects.
-const { lfoSettings } = useAudioContext()
+const { lfoSettings, clock, timeDivision } = useAudioContext()
 const lfo = computed(() => lfoSettings.value[props.index])
 
 const targets: { value: LfoTarget; label: string }[] = [
@@ -34,8 +35,14 @@ const ratePosition = computed({
   }
 })
 
-const rateReadout = computed(() =>
-  lfo.value.rate < 1 ? `${lfo.value.rate.toFixed(2)}Hz` : `${lfo.value.rate.toFixed(1)}Hz`
+const formatHz = (rate: number) => (rate < 1 ? `${rate.toFixed(2)}Hz` : `${rate.toFixed(1)}Hz`)
+
+const rateReadout = computed(() => formatHz(lfo.value.rate))
+
+// The tempo the synced steps currently work out to, so the choice stays
+// readable in Hz alongside the free-running mode.
+const syncRateReadout = computed(() =>
+  formatHz(lfoSyncRate(clock.value, timeDivision.value, lfo.value.syncSteps))
 )
 </script>
 
@@ -65,7 +72,31 @@ const rateReadout = computed(() =>
         </select>
       </div>
 
-      <div class="web-lfo-strip-slider">
+      <div class="web-lfo-strip-row">
+        <label :for="`lfo-${index}-timing`">Timing</label>
+        <select :id="`lfo-${index}-timing`" v-model="lfo.sync">
+          <option :value="false">Free</option>
+          <option :value="true">Clock</option>
+        </select>
+      </div>
+
+      <div v-if="lfo.sync" class="web-lfo-strip-row">
+        <label :for="`lfo-${index}-steps`">Steps</label>
+        <div class="web-lfo-strip-steps">
+          <select
+            :id="`lfo-${index}-steps`"
+            :aria-label="`LFO ${index + 1} cycle length in steps`"
+            v-model="lfo.syncSteps"
+          >
+            <option v-for="option in lfoSyncStepOptions" :key="option.label" :value="option.value">
+              {{ option.label }}
+            </option>
+          </select>
+          <span class="web-lfo-strip-value">{{ syncRateReadout }}</span>
+        </div>
+      </div>
+
+      <div v-else class="web-lfo-strip-slider">
         <DSlider
           :id="`lfo-${index}-rate`"
           :aria-label="`LFO ${index + 1} rate`"
@@ -119,6 +150,16 @@ const rateReadout = computed(() =>
   display: flex;
   align-items: center;
   justify-content: space-between;
+  column-gap: 0.5rem;
+
+  select {
+    min-width: 0;
+  }
+}
+
+.web-lfo-strip-steps {
+  display: flex;
+  align-items: center;
   column-gap: 0.5rem;
 
   select {

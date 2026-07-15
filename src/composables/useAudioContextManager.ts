@@ -1,6 +1,7 @@
 import { ref, watch } from 'vue';
 import type { AudioContextType, OscillatorSettings, FilterSettings, DelaySettings, LfoSettings, LfoTarget, ScopeSource, TimeDivision, VcaEnvelopeObject, FilterEnvelopeObject, MusicalKey, Octaves } from "@/types"
 import { useEnvelope } from "./useEnvelope";
+import { lfoSyncRate } from "@/utils/config";
 
 const { createEnvelope } = useEnvelope();
 
@@ -84,9 +85,9 @@ const LFO_TARGET_SCALE: Record<LfoTarget, number> = {
 }
 
 const lfoSettings = ref<LfoSettings[]>([
-    { enabled: false, target: 'pitch', waveform: 'sine', rate: 5, depth: 0.1 },
-    { enabled: false, target: 'cutoff', waveform: 'sine', rate: 0.5, depth: 0.4 },
-    { enabled: false, target: 'volume', waveform: 'sine', rate: 4, depth: 0.4 },
+    { enabled: false, target: 'pitch', waveform: 'sine', sync: false, rate: 5, syncSteps: 1, depth: 0.1 },
+    { enabled: false, target: 'cutoff', waveform: 'sine', sync: false, rate: 0.5, syncSteps: 4, depth: 0.4 },
+    { enabled: false, target: 'volume', waveform: 'sine', sync: false, rate: 4, syncSteps: 1, depth: 0.4 },
 ])
 // One oscillator + depth gain per LFO, rebuilt on each synth init.
 let lfoNodes: { oscillator: OscillatorNode, depth: GainNode }[] = []
@@ -156,7 +157,12 @@ const applyLfoSettings = () => {
         const nodes = lfoNodes[index]
         if (!nodes) return
         nodes.oscillator.type = settings.waveform
-        nodes.oscillator.frequency.setTargetAtTime(Math.max(settings.rate, 0.01), now, 0.05)
+        // Clock-synced LFOs derive their frequency from the sequencer tempo so a
+        // cycle spans a musical number of steps; free LFOs use the Hz slider.
+        const rate = settings.sync
+            ? lfoSyncRate(clock.value, timeDivision.value, settings.syncSteps)
+            : settings.rate
+        nodes.oscillator.frequency.setTargetAtTime(Math.min(Math.max(rate, 0.01), 20000), now, 0.05)
         const depth = settings.enabled ? settings.depth * LFO_TARGET_SCALE[settings.target] : 0
         nodes.depth.gain.setTargetAtTime(depth, now, 0.05)
 
@@ -214,6 +220,9 @@ watch(scopeSource, () => applyScopeSource())
 
 // Delay-targeted LFOs attach/detach when the delay is toggled.
 watch(delayEnabled, () => applyLfoSettings())
+
+// Clock-synced LFOs track tempo and time-division changes as they happen.
+watch([clock, timeDivision], () => applyLfoSettings())
 
 export const useAudioContextManager = () => {
 

@@ -15,7 +15,7 @@ const filterEnabled = ref(true);
 // The filter envelope (ADSR sweep of the cutoff) is optional. When off, the
 // cutoff simply sits at the frequency set on the VCF panel.
 const filterEnvelopeEnabled = ref(true);
-const oscillatorSettings = ref<OscillatorSettings>({ baseFrequency: 147, type: "square" });
+const oscillatorSettings = ref<OscillatorSettings>({ baseFrequency: 147, type: "square", pulseWidth: 0.5 });
 const filterSettings = ref<FilterSettings>({ frequency: 2500, q: 1, type: 'lowpass' })
 const selectedMusicalKey = ref<MusicalKey>("D")
 const selectedOctave = ref<Octaves>(3)
@@ -29,6 +29,21 @@ const voiceOscillator = ref<OscillatorNode | null>(null);
 // signal (base gain 1). Modulating the VCA's own gain would instead ADD to the
 // envelope and leak sound during rests.
 const tremoloNode = ref<GainNode | null>(null);
+
+// Pulse-width chain for square waves. OscillatorNode has no PW control, so a
+// square with adjustable duty cycle is built the classic way: a sawtooth plus a
+// DC offset run through a hard comparator (WaveShaper). Where the offset sits
+// decides how much of each cycle lands above the threshold — i.e. the pulse
+// width — and because the offset is an AudioParam, an LFO can modulate it (PWM).
+// Chain: voice saw -> pulseInput <- pwConstant; pulseInput -> shaper -> DC
+// blocker -> VCA. Non-square waves bypass it entirely.
+const pulseInputNode = ref<GainNode | null>(null);
+let pwConstantNode: ConstantSourceNode | null = null;
+
+// The scope's "VCO" view taps here: the voice waveform as selected — the
+// shaped pulse for squares, the raw oscillator for everything else — before
+// the VCA touches it.
+const vcoTapNode = ref<GainNode | null>(null);
 
 // Effects bus (delay). The voice output feeds effectsInputNode, which splits into
 // a dry path and a delay/feedback loop; both meet again at the master output.
@@ -60,9 +75,12 @@ const MAX_FEEDBACK = 0.9
 // fights the Hz-based envelope scheduling on the same node.
 const LFO_TARGET_SCALE: Record<LfoTarget, number> = {
     pitch: 1200, // cents: full depth is ±1 octave of vibrato
+    pulseWidth: 0.8, // comparator offset around the panel's pulse width
     cutoff: 4800, // cents: full depth is ±4 octaves of cutoff sweep
+    resonance: 10, // Q around the panel's resonance setting
     volume: 0.9, // gain around the tremolo stage's base of 1
     delayTime: 0.008, // seconds: full depth is ±8ms (chorus-like wobble)
+    delayMix: 0.5, // wet gain around the panel's mix setting
 }
 
 const lfoSettings = ref<LfoSettings[]>([
@@ -115,9 +133,14 @@ const applyDelaySettings = () => {
 const lfoTargetParam = (target: LfoTarget): AudioParam | null => {
     switch (target) {
         case 'pitch': return voiceOscillator.value ? voiceOscillator.value.detune : null
+        case 'pulseWidth': return pwConstantNode ? pwConstantNode.offset : null
         case 'cutoff': return filterNode.value ? filterNode.value.detune : null
+        case 'resonance': return filterNode.value ? filterNode.value.Q : null
         case 'volume': return tremoloNode.value ? tremoloNode.value.gain : null
-        case 'delayTime': return delayNode.value ? delayNode.value.delayTime : null
+        // The delay targets only bite while the delay is on; otherwise a mix
+        // LFO would fade echoes in on a supposedly disabled effect.
+        case 'delayTime': return delayEnabled.value && delayNode.value ? delayNode.value.delayTime : null
+        case 'delayMix': return delayEnabled.value && delayWetNode.value ? delayWetNode.value.gain : null
         default: return null
     }
 }
@@ -146,6 +169,16 @@ const applyLfoSettings = () => {
     })
 }
 
+// Set the comparator threshold from the stored pulse width. With a sawtooth
+// spanning -1..1, an offset of 2*pw-1 leaves exactly the fraction pw of each
+// cycle above zero — the duty cycle.
+const applyPulseWidth = () => {
+    const ctx = audioContext.value
+    if (!ctx || !pwConstantNode) return
+    const pulseWidth = Math.min(Math.max(oscillatorSettings.value.pulseWidth, 0.05), 0.95)
+    pwConstantNode.offset.setTargetAtTime(2 * pulseWidth - 1, ctx.currentTime, 0.02)
+}
+
 // Connect the selected tap point to the analyser (and detach the previous one).
 const applyScopeSource = () => {
     const analyser = analyserNode.value
@@ -161,7 +194,7 @@ const applyScopeSource = () => {
     }
 
     const source =
-        scopeSource.value === 'vco' ? voiceOscillator.value :
+        scopeSource.value === 'vco' ? vcoTapNode.value :
         scopeSource.value === 'filter' ? preFxTapNode.value :
         masterOutNode.value
     if (source) {
@@ -178,6 +211,9 @@ watch(voiceOscillator, () => {
 })
 
 watch(scopeSource, () => applyScopeSource())
+
+// Delay-targeted LFOs attach/detach when the delay is toggled.
+watch(delayEnabled, () => applyLfoSettings())
 
 export const useAudioContextManager = () => {
 
@@ -210,6 +246,38 @@ export const useAudioContextManager = () => {
         analyserNode.value = analyser;
 
         tremoloNode.value = audioContext.value.createGain()
+
+        // Pulse-width chain: (saw + DC offset) -> comparator -> DC blocker -> VCA.
+        const pulseInput = audioContext.value.createGain()
+        const comparator = audioContext.value.createWaveShaper()
+        // Hard step around zero; WaveShaper clamps inputs beyond the curve ends,
+        // so the summed saw+offset (up to ±2) still maps to a clean ±1 pulse.
+        const curve = new Float32Array(1024)
+        for (let i = 0; i < curve.length; i++) {
+            curve[i] = i < curve.length / 2 ? -1 : 1
+        }
+        comparator.curve = curve
+        // Asymmetric pulses carry a DC offset proportional to the duty cycle;
+        // a gentle sub-audio highpass strips it before the VCA so gating the
+        // envelope never thumps the speakers.
+        const dcBlocker = audioContext.value.createBiquadFilter()
+        dcBlocker.type = 'highpass'
+        dcBlocker.frequency.value = 10
+        const pwConstant = audioContext.value.createConstantSource()
+        pwConstant.offset.value = 0
+        pwConstant.start()
+        pwConstant.connect(pulseInput)
+        pulseInput.connect(comparator)
+        comparator.connect(dcBlocker)
+        dcBlocker.connect(gain)
+        pulseInputNode.value = pulseInput
+        pwConstantNode = pwConstant
+
+        // VCO scope tap: the pulse chain feeds it permanently; direct (non-square)
+        // waves are connected to it by the sequencer's voice wiring.
+        const vcoTap = audioContext.value.createGain()
+        dcBlocker.connect(vcoTap)
+        vcoTapNode.value = vcoTap
 
         // Master output: everything audible funnels through here to the
         // destination, giving the scope a stable full-chain tap point.
@@ -256,10 +324,11 @@ export const useAudioContextManager = () => {
         })
 
         applyDelaySettings()
+        applyPulseWidth()
         applyLfoSettings()
         scopeTapNode = null
         applyScopeSource()
     };
 
-    return { initSynth, clock, timeDivision, audioContext, gainNode, analyserNode, filterEnabled, filterEnvelopeEnabled, vcaEnvelope, oscillatorSettings, filterNode, filterSettings, filterEnvelope, selectedMusicalKey, selectedOctave, quantize, effectsInputNode, delayNode, delayEnabled, delaySettings, applyDelaySettings, lfoSettings, applyLfoSettings, voiceOscillator, tremoloNode, preFxTapNode, masterOutNode, scopeSource };
+    return { initSynth, clock, timeDivision, audioContext, gainNode, analyserNode, filterEnabled, filterEnvelopeEnabled, vcaEnvelope, oscillatorSettings, filterNode, filterSettings, filterEnvelope, selectedMusicalKey, selectedOctave, quantize, effectsInputNode, delayNode, delayEnabled, delaySettings, applyDelaySettings, lfoSettings, applyLfoSettings, voiceOscillator, tremoloNode, preFxTapNode, masterOutNode, scopeSource, pulseInputNode, vcoTapNode, applyPulseWidth };
 }

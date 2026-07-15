@@ -20,6 +20,8 @@ export type UseSequancerParams = {
     gainNode: Ref<GainNode | null>,
     analyserNode: Ref<AnalyserNode | null>,
     preFxTapNode: Ref<GainNode | null>,
+    pulseInputNode: Ref<GainNode | null>,
+    vcoTapNode: Ref<GainNode | null>,
     tremoloNode: Ref<GainNode | null>,
     voiceOscillator: Ref<OscillatorNode | null>,
     filterEnabled: Ref<boolean>,
@@ -34,7 +36,8 @@ export type UseSequancerParams = {
 
 export type OscillatorSettings = {
     type: OscillatorType,
-    baseFrequency: number
+    baseFrequency: number,
+    pulseWidth: number // Duty cycle for square waves (0.05 to 0.95, 0.5 = symmetric)
 }
 
 export type FilterSettings = {
@@ -50,7 +53,7 @@ export type DelaySettings = {
 }
 
 // Parameters an LFO can modulate. Each maps to an AudioParam on a live node.
-export type LfoTarget = 'pitch' | 'cutoff' | 'volume' | 'delayTime'
+export type LfoTarget = 'pitch' | 'pulseWidth' | 'cutoff' | 'resonance' | 'volume' | 'delayTime' | 'delayMix'
 
 // Where the oscilloscope taps the signal chain: the raw oscillator, after the
 // VCA + filter (pre-effects), or the full chain at the output.

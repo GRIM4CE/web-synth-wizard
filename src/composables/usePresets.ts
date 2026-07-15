@@ -50,6 +50,7 @@ export const usePresets = () => {
     applyDelaySettings,
     lfoSettings,
     applyLfoSettings,
+    applyPulseWidth,
     steps
   } = useAudioContext()
 
@@ -97,7 +98,12 @@ export const usePresets = () => {
 
     clock.value = preset.clock
     timeDivision.value = preset.timeDivision
-    oscillatorSettings.value = { ...preset.oscillatorSettings }
+    // Presets saved before pulse width existed default to a symmetric square.
+    oscillatorSettings.value = {
+      ...preset.oscillatorSettings,
+      pulseWidth: preset.oscillatorSettings.pulseWidth ?? 0.5
+    }
+    applyPulseWidth()
     selectedMusicalKey.value = preset.selectedMusicalKey
     selectedOctave.value = preset.selectedOctave
     quantize.value = preset.quantize

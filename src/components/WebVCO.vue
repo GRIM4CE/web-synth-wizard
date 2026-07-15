@@ -6,7 +6,7 @@ import type { MusicalKey, Octaves } from "@/types"
 import DCheckbox from "./DCheckbox.vue";
 
 // Use the shared AudioContext and GainNode
-const { oscillatorSettings, selectedMusicalKey, selectedOctave, quantize, calculateFrequency } = useAudioContext();
+const { oscillatorSettings, selectedMusicalKey, selectedOctave, quantize, calculateFrequency, applyPulseWidth } = useAudioContext();
 
 const waves = ["sawtooth", "sine", "square", "triangle"];
 const keys = [ "A", "A#", "B", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#"]
@@ -26,6 +26,9 @@ watch(type, (newTypeValue: OscillatorType) => {
     oscillatorSettings.value.type = newTypeValue
   }
 });
+
+// Push pulse-width changes onto the live comparator (no-op until activated).
+watch(() => oscillatorSettings.value.pulseWidth, () => applyPulseWidth());
 
 watch(selectedMusicalKey, (newSelectedMusicalKey: MusicalKey) => {
   if(selectedMusicalKey.value) {
@@ -75,6 +78,19 @@ watch(selectedOctave, (newSelectedOctave: Octaves) => {
       </div>
 
 
+
+      <div class="web-vco-freq" v-if="type === 'square'">
+        <DSlider
+          type="range"
+          :min="0.05"
+          :max="0.95"
+          step="0.01"
+          id="pulse-width"
+          aria-label="Pulse width"
+          v-model="oscillatorSettings.pulseWidth"
+        />
+        <p>Pulse Width: {{ Math.round(oscillatorSettings.pulseWidth * 100) }}%</p>
+      </div>
 
       <div class="web-vco-freq" :class="{ 'is-disabled': quantize }">
         <DSlider

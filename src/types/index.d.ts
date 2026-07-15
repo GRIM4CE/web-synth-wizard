@@ -19,7 +19,9 @@ export type UseSequancerParams = {
     filterNode: Ref<BiquadFilterNode | null>,
     gainNode: Ref<GainNode | null>,
     analyserNode: Ref<AnalyserNode | null>,
+    effectsInputNode: Ref<GainNode | null>,
     filterEnabled: Ref<boolean>,
+    filterEnvelopeEnabled: Ref<boolean>,
     filterEnvelope: FilterEnvelopeObject,
     vcaEnvelope: VcaEnvelopeObject,
     oscillatorSettings: Ref<OscillatorSettings>
@@ -37,6 +39,12 @@ export type FilterSettings = {
     frequency: number,
     q: number,
     type: BiquadFilterType,
+}
+
+export type DelaySettings = {
+    time: number, // Delay time in milliseconds
+    feedback: number, // Feedback amount (0 to <1), how much of the echo is fed back in
+    mix: number, // Wet/dry balance (0 = fully dry, 1 = fully wet)
 }
 
 export type CreateOscillatorParams ={

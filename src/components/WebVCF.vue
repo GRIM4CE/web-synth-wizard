@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, watch } from 'vue';
+import { computed, watch } from 'vue';
 import { useAudioContext } from '@/composables/useAudioContext';
 import DSlider from './DSlider.vue'
 import DCheckbox from './DCheckbox.vue'
@@ -10,16 +10,34 @@ const { filterNode, filterSettings, filterEnvelope, filterEnabled, filterEnvelop
 // Reactive filter parameters
 const filterTypes: BiquadFilterType[] = ["lowpass", 'highpass', 'bandpass', 'notch']
 
-const filterQ = ref(filterSettings.value.q); // Default Q factor
-const filterType = ref(filterSettings.value.type) // Default Type
+// Cutoff slider is logarithmic: audible cutoff changes are multiplicative (octaves),
+// so a linear 20-20000 slider crams everything that matters into its bottom tenth.
+const minFrequency = 20
+const maxFrequency = 20000
+const frequencyPosition = computed({
+  get: () =>
+    Math.log(filterEnvelope.envelope.value.frequency / minFrequency) /
+    Math.log(maxFrequency / minFrequency),
+  set: (position) => {
+    filterEnvelope.envelope.value.frequency = Math.round(
+      minFrequency * Math.pow(maxFrequency / minFrequency, position)
+    )
+  }
+})
 
-// Watchers to update filter parameters based on user input
-watch(filterType, (newFilterType) => {
+const frequencyReadout = computed(() => {
+  const frequency = filterEnvelope.envelope.value.frequency
+  return frequency >= 1000 ? `${(frequency / 1000).toFixed(1)}kHz` : `${Math.round(frequency)}Hz`
+})
+
+// Watchers to update filter parameters based on user input. These bind to the
+// shared filterSettings so presets can change them and reach the live node too.
+watch(() => filterSettings.value.type, (newFilterType) => {
   if(!filterNode.value) return
   filterNode.value.type = newFilterType
 });
 
-watch(filterQ, (newValue) => {
+watch(() => filterSettings.value.q, (newValue) => {
   if(!filterNode.value) return
   filterNode.value.Q.value = newValue;
 });
@@ -44,8 +62,8 @@ watch(() => filterEnvelope.envelope.value.frequency, (newFrequency) => {
         <label for="filter-envelope-enabled">Envelope: {{ filterEnvelopeEnabled ? 'On' : 'Off' }}</label>
         <DCheckbox id="filter-envelope-enabled" aria-label="Enable filter envelope" v-model="filterEnvelopeEnabled" />
       </div>
-      <label for="filter-type">Filter Type: {{ filterType }}</label>
-        <select id="filter-type" v-model="filterType">
+      <label for="filter-type">Filter Type: {{ filterSettings.type }}</label>
+        <select id="filter-type" v-model="filterSettings.type">
             <option v-for="filterType in filterTypes" :key="filterType" :value="filterType">
               {{ filterType }}
             </option>
@@ -53,12 +71,13 @@ watch(() => filterEnvelope.envelope.value.frequency, (newFrequency) => {
 
       <div class="web-vcf-slider-wrapper">
         <div class="web-vcf-slider">
-          <DSlider orient="vertical" id="vcf-frequency" aria-label="Filter cutoff frequency" type="range" :min="20" :max="20000" v-model="filterEnvelope.envelope.value.frequency" step="1" />
+          <DSlider orient="vertical" id="vcf-frequency" aria-label="Filter cutoff frequency" type="range" :min="0" :max="1" step="0.001" v-model="frequencyPosition" />
           <label for="vcf-frequency">Freq</label>
+          <span class="web-vcf-value">{{ frequencyReadout }}</span>
         </div>
 
         <div class="web-vcf-slider">
-          <DSlider orient="vertical" id="vcf-resonance" aria-label="Filter resonance" type="range" :min="0.0001" :max="30" v-model="filterQ" step="0.01"/>
+          <DSlider orient="vertical" id="vcf-resonance" aria-label="Filter resonance" type="range" :min="0.0001" :max="30" v-model="filterSettings.q" step="0.01"/>
           <label for="vcf-resonance">Res</label>
         </div>
 
@@ -109,6 +128,14 @@ watch(() => filterEnvelope.envelope.value.frequency, (newFrequency) => {
 }
 
 .web-vcf-slider {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
+}
+
+.web-vcf-value {
+  font-size: 12px;
+  color: var(--color-heading);
 }
   </style>

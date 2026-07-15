@@ -92,3 +92,22 @@ export type FilterEnvelopeObject = {
 }
 
 export type Octaves = 1 | 2 | 3 | 4 | 5 | 6 | 7
+
+// A full snapshot of the synth's user-adjustable state, storable and re-appliable.
+export type SynthPreset = {
+    name: string,
+    clock: number,
+    timeDivision: TimeDivision,
+    oscillatorSettings: OscillatorSettings,
+    selectedMusicalKey: MusicalKey,
+    selectedOctave: Octaves,
+    quantize: boolean,
+    filterEnabled: boolean,
+    filterEnvelopeEnabled: boolean,
+    filterSettings: FilterSettings,
+    filterEnvelope: FilterEnvelope,
+    vcaEnvelope: VcaEnvelope,
+    delayEnabled: boolean,
+    delaySettings: DelaySettings,
+    steps: Step[],
+}

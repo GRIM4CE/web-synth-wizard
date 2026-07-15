@@ -92,7 +92,13 @@ export const useAudioContextManager = () => {
         // duration of its attack.
         gain.gain.setValueAtTime(0.0001, audioContext.value.currentTime);
         gainNode.value = gain;
-        filterNode.value = audioContext.value.createBiquadFilter();
+        const filter = audioContext.value.createBiquadFilter();
+        // A fresh BiquadFilterNode starts at Web Audio defaults (lowpass, 350Hz,
+        // Q 1); apply the stored settings so the panel and the sound agree.
+        filter.type = filterSettings.value.type
+        filter.Q.value = filterSettings.value.q
+        filter.frequency.value = filterEnvelope.envelope.value.frequency
+        filterNode.value = filter;
         const analyser = audioContext.value.createAnalyser();
         analyser.fftSize = 2048;
         // The analyser sits just before the destination so the oscilloscope

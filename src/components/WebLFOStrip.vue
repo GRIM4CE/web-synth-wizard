@@ -14,9 +14,12 @@ const lfo = computed(() => lfoSettings.value[props.index])
 
 const targets: { value: LfoTarget; label: string }[] = [
   { value: 'pitch', label: 'Pitch' },
+  { value: 'pulseWidth', label: 'Pulse width' },
   { value: 'cutoff', label: 'Filter cutoff' },
+  { value: 'resonance', label: 'Resonance' },
   { value: 'volume', label: 'Volume' },
-  { value: 'delayTime', label: 'Delay time' }
+  { value: 'delayTime', label: 'Delay time' },
+  { value: 'delayMix', label: 'Delay mix' }
 ]
 const waveforms: OscillatorType[] = ['sine', 'triangle', 'square', 'sawtooth']
 
@@ -100,11 +103,9 @@ const rateReadout = computed(() =>
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  padding: 1rem;
-  border: 1px solid var(--color-background-mute);
-  border-radius: 8px;
+  padding: 0.5rem 1rem;
   width: 100%;
-  max-width: 14rem;
+  max-width: 16rem;
 }
 
 .web-lfo-strip-power {

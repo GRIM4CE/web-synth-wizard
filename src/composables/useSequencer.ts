@@ -13,6 +13,8 @@ export const useSequencer = ({
     gainNode,
     analyserNode,
     preFxTapNode,
+    pulseInputNode,
+    vcoTapNode,
     tremoloNode,
     voiceOscillator,
     filterEnabled,
@@ -45,6 +47,30 @@ export const useSequencer = ({
     let voiceActive = false;
 
     const {createOscillator, getFrequency} = useVCO()
+
+    // Wire the voice oscillator to the VCA, honouring the selected waveform.
+    // A square is produced by the pulse-width chain (sawtooth into a comparator,
+    // so its duty cycle is adjustable); every other wave connects directly.
+    // Reconnecting mid-note can click, so the graph is only touched when the
+    // wave actually moves into or out of the pulse chain.
+    let voiceWiring: 'pulse' | 'direct' | null = null;
+    function wireOscillator(oscillator: OscillatorNode) {
+        if (!gainNode.value) return;
+        const usePulse = oscillatorSettings.value.type === 'square' && !!pulseInputNode.value;
+        oscillator.type = usePulse ? 'sawtooth' : oscillatorSettings.value.type;
+        const wiring = usePulse ? 'pulse' : 'direct';
+        if (wiring === voiceWiring) return;
+        oscillator.disconnect();
+        if (usePulse) {
+            // The pulse chain feeds the VCO scope tap itself (post-comparator).
+            oscillator.connect(pulseInputNode.value!);
+        } else {
+            oscillator.connect(gainNode.value);
+            // Mirror the raw wave onto the VCO scope tap.
+            if (vcoTapNode.value) oscillator.connect(vcoTapNode.value);
+        }
+        voiceWiring = wiring;
+    }
 
     // Wire the gain node into the output chain. Done once (and again whenever the
     // filter is toggled) rather than every step, so we don't tear down and rebuild
@@ -125,6 +151,7 @@ export const useSequencer = ({
             currentOscillator.disconnect();
             currentOscillator = null;
             voiceOscillator.value = null;
+            voiceWiring = null;
         }
         voiceActive = false;
         if (gainNode.value && audioContext.value) {
@@ -167,14 +194,14 @@ export const useSequencer = ({
             if (!currentOscillator) {
                 // Start the single voice and keep it running for the whole sequence.
                 currentOscillator = createOscillator(params);
-                currentOscillator.connect(gainNode.value);
+                wireOscillator(currentOscillator);
                 currentOscillator.start(ctx.currentTime);
                 // Publish the live voice so LFOs and the scope can attach to it.
                 voiceOscillator.value = currentOscillator;
             } else {
                 // Legato: retune the running voice (phase-continuous, so no click) and
-                // pick up any waveform change.
-                currentOscillator.type = oscillatorSettings.value.type;
+                // pick up any waveform change (including into/out of the pulse chain).
+                wireOscillator(currentOscillator);
                 currentOscillator.frequency.setValueAtTime(getFrequency(params), ctx.currentTime);
             }
 

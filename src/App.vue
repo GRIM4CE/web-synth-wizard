@@ -12,12 +12,26 @@
   import { useAudioContext } from "@/composables/useAudioContext"
   import logoPng from './assets/logo.png'
   import logoWebp from './assets/logo.webp'
+  import type { Component } from 'vue'
+
+  const panelComponents: Record<string, Component> = {
+    clock: WebClock,
+    sequencer: WebSequencer,
+    vco: WebVCO,
+    vcf: WebVCF,
+    vca: WebVCA,
+    lfo: WebLFO,
+    fx: WebEffects
+  }
 
   const { startAudioContext, suspendAudioContext } = useAudioContext()
   const canUseAudioContext = 'AudioContext' in window
 
-  // Tabbed cards (mobile only). On desktop every panel is shown at once, so the
-  // tab bar is hidden via CSS and the active tab only drives the mobile view.
+  // Tabbed cards on every viewport, so the oscilloscope in the header stays on
+  // screen while any module is edited. Mobile shows the active panel; desktop
+  // shows the last TWO selected panels side by side — clicking a new tab
+  // replaces the older of the pair (the CSS decides how many are visible, so
+  // no breakpoint tracking is needed in JS).
   const tabs = [
     { id: 'clock', label: 'Clock' },
     { id: 'sequencer', label: 'Sequencer' },
@@ -28,15 +42,24 @@
     { id: 'fx', label: 'FX' }
   ]
 
-  const activeTab = ref('clock')
+  const activeTab = ref('sequencer')
+  const secondaryTab = ref('vcf')
   const tabRefs = ref<HTMLButtonElement[]>([])
+
+  const selectTab = (id: string) => {
+    if (id === activeTab.value) return
+    // Selecting the visible secondary swaps the pair; anything else pushes the
+    // current primary into the secondary slot.
+    secondaryTab.value = activeTab.value
+    activeTab.value = id
+  }
 
   const onTabKeydown = (event: KeyboardEvent, index: number) => {
     if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return
     event.preventDefault()
     const direction = event.key === 'ArrowRight' ? 1 : -1
     const nextIndex = (index + direction + tabs.length) % tabs.length
-    activeTab.value = tabs[nextIndex].id
+    selectTab(tabs[nextIndex].id)
     tabRefs.value[nextIndex]?.focus()
   }
 </script>
@@ -76,11 +99,11 @@
 
         <WebPresets class="main-head-presets" />
       </div>
-
-      <div class="main-head-scope">
-        <WebOscilloscope />
-      </div>
     </section>
+
+    <aside class="main-head-scope">
+      <WebOscilloscope />
+    </aside>
 
     <nav class="synth-tabs" role="tablist" aria-label="Synth modules">
       <button
@@ -88,89 +111,39 @@
         :key="tab.id"
         ref="tabRefs"
         class="synth-tab"
-        :class="{ 'is-active': activeTab === tab.id }"
+        :class="{ 'is-active': activeTab === tab.id, 'is-secondary': secondaryTab === tab.id }"
         type="button"
         role="tab"
         :id="`tab-${tab.id}`"
         :aria-selected="activeTab === tab.id"
         :aria-controls="`panel-${tab.id}`"
         :tabindex="activeTab === tab.id ? 0 : -1"
-        @click="activeTab = tab.id"
+        @click="selectTab(tab.id)"
         @keydown="onTabKeydown($event, index)"
       >
         {{ tab.label }}
       </button>
     </nav>
 
-    <section
-      class="section synth-panel"
-      :class="{ 'is-active': activeTab === 'clock' }"
-      id="panel-clock"
-      role="tabpanel"
-      aria-labelledby="tab-clock"
-    >
-       <WebClock />
-    </section>
-    <section
-      class="section web-sequencer synth-panel"
-      :class="{ 'is-active': activeTab === 'sequencer' }"
-      id="panel-sequencer"
-      role="tabpanel"
-      aria-labelledby="tab-sequencer"
-    >
-       <WebSequencer />
-    </section>
-    <section
-      class="section synth-panel"
-      :class="{ 'is-active': activeTab === 'vco' }"
-      id="panel-vco"
-      role="tabpanel"
-      aria-labelledby="tab-vco"
-    >
-      <WebVCO/>
-    </section>
-    <section
-      class="section synth-panel"
-      :class="{ 'is-active': activeTab === 'vcf' }"
-      id="panel-vcf"
-      role="tabpanel"
-      aria-labelledby="tab-vcf"
-    >
-      <WebVCF/>
-    </section>
-    <section
-      class="section synth-panel"
-      :class="{ 'is-active': activeTab === 'vca' }"
-      id="panel-vca"
-      role="tabpanel"
-      aria-labelledby="tab-vca"
-    >
-      <WebVCA/>
-    </section>
-    <section
-      class="section web-lfo-panel synth-panel"
-      :class="{ 'is-active': activeTab === 'lfo' }"
-      id="panel-lfo"
-      role="tabpanel"
-      aria-labelledby="tab-lfo"
-    >
-      <WebLFO/>
-    </section>
-    <section
-      class="section web-effects-panel synth-panel"
-      :class="{ 'is-active': activeTab === 'fx' }"
-      id="panel-fx"
-      role="tabpanel"
-      aria-labelledby="tab-fx"
-    >
-      <WebEffects/>
-    </section>
+    <div class="synth-panels">
+      <section
+        v-for="tab in tabs"
+        :key="tab.id"
+        class="section synth-panel"
+        :class="{ 'is-active': activeTab === tab.id, 'is-secondary': secondaryTab === tab.id }"
+        :id="`panel-${tab.id}`"
+        role="tabpanel"
+        :aria-labelledby="`tab-${tab.id}`"
+      >
+        <component :is="panelComponents[tab.id]" />
+      </section>
+    </div>
   </main>
 </template>
 
 <style scoped lang="scss">
-.container { 
-  max-width: 1024px;
+.container {
+  max-width: 1200px;
   width: 100%;
   min-height: 100vh;
   margin: 0 auto;
@@ -179,12 +152,18 @@
 }
 
 .main-container {
+  display: flex;
+  flex-direction: column;
   row-gap: 1rem;
 
+  // Desktop: modules on the left, the oscilloscope in a sticky right column so
+  // it stays on screen while any module is edited.
   @include md {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(20rem, 26rem);
     column-gap: 2rem;
+    row-gap: 1rem;
+    align-items: start;
   }
 }
 
@@ -194,24 +173,6 @@
   text-align: center;
   align-content: center;
   padding: 2rem;
-}
-
-.web-sequencer {
-  @include md {
-    grid-column: span 2;
-  }
-}
-
-.web-lfo-panel {
-  @include md {
-    grid-column: span 2;
-  }
-}
-
-.web-effects-panel {
-  @include md {
-    grid-column: span 1;
-  }
 }
 
 .section {
@@ -226,10 +187,8 @@
   row-gap: 1rem;
 
   @include md {
-    grid-column: span 3;
-    grid-template-columns: 1fr auto;
-    align-items: center;
-    column-gap: 2rem;
+    grid-column: 1;
+    grid-row: 1;
     text-align: left;
   }
 }
@@ -249,6 +208,11 @@
   width: 100%;
 
   @include md {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    align-self: start;
+    position: sticky;
+    top: 1rem;
     justify-content: flex-end;
   }
 }
@@ -313,7 +277,7 @@
   background-color: transparent;
 }
 
-/* Tabbed cards — mobile only. Hidden on desktop where the grid shows everything. */
+/* Tab bar on every viewport, sticky so switching modules is always at hand. */
 .synth-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -326,7 +290,8 @@
   background: var(--color-background);
 
   @include md {
-    display: none;
+    grid-column: 1;
+    grid-row: 2;
   }
 }
 
@@ -352,17 +317,42 @@
   border-color: var(--blue);
 }
 
-/* Below the md breakpoint (48rem) show only the active panel, styled as a card. */
-@media (max-width: 47.99rem) {
-  .synth-panel {
-    padding: 1.25rem 1rem;
-    border: 1px solid var(--color-background-mute);
-    border-radius: 8px;
-    background: var(--color-background-soft);
+/* On desktop the previously selected module stays open in a second slot. */
+.synth-tab.is-secondary:not(.is-active) {
+  @include md {
+    color: var(--color-heading);
+    border-color: var(--green);
   }
+}
 
-  .synth-panel:not(.is-active) {
-    display: none;
+.synth-panels {
+  display: grid;
+  gap: 1rem;
+
+  @include md {
+    grid-column: 1;
+    grid-row: 3;
+    align-content: start;
+  }
+}
+
+.synth-panel {
+  padding: 1.25rem 1rem;
+  border: 1px solid var(--color-background-mute);
+  border-radius: 8px;
+  background: var(--color-background-soft);
+}
+
+/* Mobile: only the active panel. */
+.synth-panel:not(.is-active) {
+  display: none;
+}
+
+@include md {
+  /* Desktop: the active panel plus the previous one, stacked in the left
+     column while the scope stays pinned on the right. */
+  .synth-panel.is-secondary {
+    display: block;
   }
 }
 </style>

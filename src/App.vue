@@ -6,6 +6,7 @@
   import WebClock from './components/WebClock.vue';
   import WebSequencer from './components/WebSequencer.vue';
   import WebOscilloscope from './components/WebOscilloscope.vue';
+  import WebEffects from './components/WebEffects.vue';
   import { useAudioContext } from "@/composables/useAudioContext"
   import logoPng from './assets/logo.png'
   import logoWebp from './assets/logo.webp'
@@ -20,7 +21,8 @@
     { id: 'sequencer', label: 'Sequencer' },
     { id: 'vco', label: 'VCO' },
     { id: 'vcf', label: 'VCF' },
-    { id: 'vca', label: 'VCA' }
+    { id: 'vca', label: 'VCA' },
+    { id: 'fx', label: 'FX' }
   ]
 
   const activeTab = ref('clock')
@@ -140,6 +142,15 @@
     >
       <WebVCA/>
     </section>
+    <section
+      class="section web-effects-panel synth-panel"
+      :class="{ 'is-active': activeTab === 'fx' }"
+      id="panel-fx"
+      role="tabpanel"
+      aria-labelledby="tab-fx"
+    >
+      <WebEffects/>
+    </section>
   </main>
 </template>
 
@@ -177,6 +188,12 @@
   }
 }
 
+.web-effects-panel {
+  @include md {
+    grid-column: span 3;
+  }
+}
+
 .section {
   text-align: center;
 }
@@ -209,6 +226,7 @@
 .main-head-scope {
   display: flex;
   justify-content: center;
+  width: 100%;
 
   @include md {
     justify-content: flex-end;

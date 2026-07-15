@@ -12,11 +12,13 @@ export const useSequencer = ({
     filterNode,
     gainNode,
     analyserNode,
+    effectsInputNode,
     filterEnabled,
+    filterEnvelopeEnabled,
     filterEnvelope,
     vcaEnvelope,
     oscillatorSettings,
-    selectedMusicalKey, 
+    selectedMusicalKey,
     selectedOctave,
     quantize
 }: UseSequancerParams
@@ -47,13 +49,16 @@ export const useSequencer = ({
     // the graph while audio is flowing — that rewiring is itself a source of clicks.
     function routeGraph() {
         if (!gainNode.value || !filterNode.value || !analyserNode.value) return;
+        // The voice feeds the effects bus when one exists (its dry/wet paths end at
+        // the analyser); otherwise it goes straight to the analyser.
+        const output = effectsInputNode.value ?? analyserNode.value;
         gainNode.value.disconnect();
         filterNode.value.disconnect();
         if (filterEnabled.value) {
             gainNode.value.connect(filterNode.value);
-            filterNode.value.connect(analyserNode.value);
+            filterNode.value.connect(output);
         } else {
-            gainNode.value.connect(analyserNode.value);
+            gainNode.value.connect(output);
         }
         routed = true;
     }
@@ -62,6 +67,15 @@ export const useSequencer = ({
     // without waiting for the next step.
     watch(filterEnabled, () => {
         if (routed) routeGraph();
+    });
+
+    // When the filter envelope is switched off mid-note, cancel any in-flight
+    // cutoff sweep and pin the cutoff at the panel frequency.
+    watch(filterEnvelopeEnabled, (enabled) => {
+        if (enabled || !filterNode.value || !audioContext.value) return;
+        const now = audioContext.value.currentTime;
+        filterNode.value.frequency.cancelScheduledValues(now);
+        filterNode.value.frequency.setValueAtTime(filterEnvelope.envelope.value.frequency, now);
     });
 
     // If the synth is (re)initialised the gain node is replaced, so the fresh node
@@ -157,14 +171,19 @@ export const useSequencer = ({
             if (!voiceActive) {
                 vcaEnvelope.triggerAttack(gainNode.value, ctx, vcaEnvelope.envelope);
                 if (filterEnabled.value) {
-                    filterEnvelope.triggerAttack(filterNode.value, ctx, filterEnvelope.envelope);
+                    if (filterEnvelopeEnabled.value) {
+                        filterEnvelope.triggerAttack(filterNode.value, ctx, filterEnvelope.envelope);
+                    } else {
+                        // No envelope: the cutoff just sits at the panel frequency.
+                        filterNode.value.frequency.setValueAtTime(filterEnvelope.envelope.value.frequency, ctx.currentTime);
+                    }
                 }
                 voiceActive = true;
             }
         } else if (voiceActive) {
             // Rest: release the gate so the tone stops until the next active step.
             vcaEnvelope.triggerRelease(gainNode.value, ctx, vcaEnvelope.envelope);
-            if (filterEnabled.value) {
+            if (filterEnabled.value && filterEnvelopeEnabled.value) {
                 filterEnvelope.triggerRelease(filterNode.value, ctx, filterEnvelope.envelope);
             }
             voiceActive = false;

@@ -5,7 +5,7 @@ import DSlider from './DSlider.vue'
 import DCheckbox from './DCheckbox.vue'
 
 // Retrieve the shared AudioContext and gain node from a composable
-const { filterNode, filterSettings, filterEnvelope, filterEnabled } = useAudioContext();
+const { filterNode, filterSettings, filterEnvelope, filterEnabled, filterEnvelopeEnabled } = useAudioContext();
 
 // Reactive filter parameters
 const filterTypes: BiquadFilterType[] = ["lowpass", 'highpass', 'bandpass', 'notch']
@@ -23,6 +23,13 @@ watch(filterQ, (newValue) => {
   if(!filterNode.value) return
   filterNode.value.Q.value = newValue;
 });
+
+// With the envelope off nothing sweeps the cutoff, so frequency changes from the
+// slider need to reach the filter node directly to be audible.
+watch(() => filterEnvelope.envelope.value.frequency, (newFrequency) => {
+  if (!filterNode.value || filterEnvelopeEnabled.value) return
+  filterNode.value.frequency.value = newFrequency
+});
 </script>
 
 
@@ -33,13 +40,17 @@ watch(filterQ, (newValue) => {
         <label for="filter-enabled">Filter: {{ filterEnabled ? 'On' : 'Off' }}</label>
         <DCheckbox id="filter-enabled" aria-label="Enable filter" v-model="filterEnabled" />
       </div>
+      <div class="web-vcf-power">
+        <label for="filter-envelope-enabled">Envelope: {{ filterEnvelopeEnabled ? 'On' : 'Off' }}</label>
+        <DCheckbox id="filter-envelope-enabled" aria-label="Enable filter envelope" v-model="filterEnvelopeEnabled" />
+      </div>
       <label for="filter-type">Filter Type: {{ filterType }}</label>
         <select id="filter-type" v-model="filterType">
             <option v-for="filterType in filterTypes" :key="filterType" :value="filterType">
               {{ filterType }}
             </option>
         </select>
-        
+
       <div class="web-vcf-slider-wrapper">
         <div class="web-vcf-slider">
           <DSlider orient="vertical" id="vcf-frequency" aria-label="Filter cutoff frequency" type="range" :min="20" :max="20000" v-model="filterEnvelope.envelope.value.frequency" step="1" />
@@ -51,25 +62,27 @@ watch(filterQ, (newValue) => {
           <label for="vcf-resonance">Res</label>
         </div>
 
-        <div class="web-vcf-slider">
-          <DSlider orient="vertical" id="vcf-attack" aria-label="Filter attack" type="range" :min="0.0001" :max="5000" step="0.001" v-model="filterEnvelope.envelope.value.attack" />
-          <label for="vcf-attack">A</label>
-        </div>
+        <template v-if="filterEnvelopeEnabled">
+          <div class="web-vcf-slider">
+            <DSlider orient="vertical" id="vcf-attack" aria-label="Filter attack" type="range" :min="0.0001" :max="5000" step="0.001" v-model="filterEnvelope.envelope.value.attack" />
+            <label for="vcf-attack">A</label>
+          </div>
 
-        <div class="web-vcf-slider">
-          <DSlider orient="vertical" id="vcf-decay" aria-label="Filter decay" type="range" :min="0.0001" :max="500" step="0.01" v-model="filterEnvelope.envelope.value.decay" />
-          <label for="vcf-decay">D</label>
-        </div>
+          <div class="web-vcf-slider">
+            <DSlider orient="vertical" id="vcf-decay" aria-label="Filter decay" type="range" :min="0.0001" :max="500" step="0.01" v-model="filterEnvelope.envelope.value.decay" />
+            <label for="vcf-decay">D</label>
+          </div>
 
-        <div class="web-vcf-slider">
-          <DSlider orient="vertical" id="vcf-sustain" aria-label="Filter sustain" type="range" :min="0.0001" :max="1" step="0.01" v-model="filterEnvelope.envelope.value.sustain" />
-          <label for="vcf-sustain">S</label>
-        </div>
+          <div class="web-vcf-slider">
+            <DSlider orient="vertical" id="vcf-sustain" aria-label="Filter sustain" type="range" :min="0.0001" :max="1" step="0.01" v-model="filterEnvelope.envelope.value.sustain" />
+            <label for="vcf-sustain">S</label>
+          </div>
 
-        <div class="web-vcf-slider">
-          <DSlider orient="vertical" id="vcf-release" aria-label="Filter release" type="range" :min="0.0001" :max="1000" step="0.01" v-model="filterEnvelope.envelope.value.release" />
-          <label for="vcf-release">R</label>
-        </div>
+          <div class="web-vcf-slider">
+            <DSlider orient="vertical" id="vcf-release" aria-label="Filter release" type="range" :min="0.0001" :max="1000" step="0.01" v-model="filterEnvelope.envelope.value.release" />
+            <label for="vcf-release">R</label>
+          </div>
+        </template>
       </div>
   </div>
   </template>

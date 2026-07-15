@@ -10,9 +10,9 @@ export type Step = {
 
 export type MusicalKey = 'C' | 'C#' | 'D' | 'D#' | 'E' | 'F' | 'F#' | 'G' | 'G#' | 'A' | 'A#' | 'B'
 
-// What drives the voice: the step grid, live keyboard/MIDI input, or the
-// Turing machine's shift-register loop.
-export type SequencerMode = 'steps' | 'keyboard' | 'turing'
+// What drives the voice: the step grid, the computer keyboard, a MIDI
+// controller, or the Turing machine's shift-register loop.
+export type SequencerMode = 'steps' | 'keyboard' | 'midi' | 'turing'
 
 // One slot of the Turing machine's looping register: a raw voltage (0..1,
 // spanning one octave above the base frequency) and whether its gate fires.

@@ -49,9 +49,9 @@ export const useSequencer = ({
 ) => {
     const steps = ref<Step[]>(Array.from({ length: 16 }, (_, i) => randomStep(i)));
 
-    // What drives the voice: the step grid, live keyboard/MIDI notes, or the
-    // Turing machine. The clock keeps ticking in every mode so switching back
-    // mid-performance stays in time; keyboard mode just ignores the ticks.
+    // What drives the voice: the step grid, live keyboard or MIDI notes, or
+    // the Turing machine. The clock keeps ticking in every mode so switching
+    // back mid-performance stays in time; live modes just ignore the ticks.
     const sequencerMode = ref<SequencerMode>('steps')
 
     // Turing machine (a simplified Music Thing style shift register): a loop
@@ -323,8 +323,8 @@ export const useSequencer = ({
     function playStep(stepIndex: number) {
         if (!audioContext.value || !gainNode.value || !filterNode.value || !analyserNode.value) return;
 
-        // Keyboard/MIDI mode: the clock keeps time but notes are gated by hand.
-        if (sequencerMode.value === 'keyboard') return;
+        // Keyboard/MIDI modes: the clock keeps time but notes are gated by hand.
+        if (sequencerMode.value === 'keyboard' || sequencerMode.value === 'midi') return;
 
         if (sequencerMode.value === 'turing') {
             playTuringStep(stepIndex);

@@ -7,6 +7,7 @@
   import WebSequencer from './components/WebSequencer.vue';
   import WebOscilloscope from './components/WebOscilloscope.vue';
   import WebEffects from './components/WebEffects.vue';
+  import WebPresets from './components/WebPresets.vue';
   import { useAudioContext } from "@/composables/useAudioContext"
   import logoPng from './assets/logo.png'
   import logoWebp from './assets/logo.webp'
@@ -70,6 +71,8 @@
           <button class="button" @click="startAudioContext()">Activate Synth</button>
           <button class="button stop-button" @click="suspendAudioContext()">Stop Synth</button>
         </div>
+
+        <WebPresets class="main-head-presets" />
       </div>
 
       <div class="main-head-scope">
@@ -251,6 +254,10 @@
   display: flex;
   column-gap: 1rem;
   justify-content: center;
+}
+
+.main-head-presets {
+  margin-top: 1rem;
 }
 
 

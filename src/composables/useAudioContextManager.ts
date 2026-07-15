@@ -247,7 +247,7 @@ export const useAudioContextManager = () => {
 
         tremoloNode.value = audioContext.value.createGain()
 
-        // Pulse-width chain: (saw + DC offset) -> comparator -> DC blocker -> VCA.
+        // Pulse-width chain: (saw + DC offset) -> comparator -> VCA.
         const pulseInput = audioContext.value.createGain()
         const comparator = audioContext.value.createWaveShaper()
         // Hard step around zero; WaveShaper clamps inputs beyond the curve ends,
@@ -257,26 +257,24 @@ export const useAudioContextManager = () => {
             curve[i] = i < curve.length / 2 ? -1 : 1
         }
         comparator.curve = curve
-        // Asymmetric pulses carry a DC offset proportional to the duty cycle;
-        // a gentle sub-audio highpass strips it before the VCA so gating the
-        // envelope never thumps the speakers.
-        const dcBlocker = audioContext.value.createBiquadFilter()
-        dcBlocker.type = 'highpass'
-        dcBlocker.frequency.value = 10
+        // The pulse stays DC-coupled on purpose: plateaus pin at ±1 so PWM only
+        // moves the edges (like a hardware scope shows it). AC-coupling this
+        // with a highpass made the plateaus droop and the whole wave re-center
+        // whenever the duty cycle moved. The DC an asymmetric pulse carries is
+        // scaled down by the VCA (≤ ~0.05) before it reaches anything physical.
         const pwConstant = audioContext.value.createConstantSource()
         pwConstant.offset.value = 0
         pwConstant.start()
         pwConstant.connect(pulseInput)
         pulseInput.connect(comparator)
-        comparator.connect(dcBlocker)
-        dcBlocker.connect(gain)
+        comparator.connect(gain)
         pulseInputNode.value = pulseInput
         pwConstantNode = pwConstant
 
         // VCO scope tap: the pulse chain feeds it permanently; direct (non-square)
         // waves are connected to it by the sequencer's voice wiring.
         const vcoTap = audioContext.value.createGain()
-        dcBlocker.connect(vcoTap)
+        comparator.connect(vcoTap)
         vcoTapNode.value = vcoTap
 
         // Master output: everything audible funnels through here to the

@@ -40,7 +40,7 @@ OscillatorNode → GainNode (VCA) → BiquadFilterNode (VCF) → AudioContext.de
   - `useAudioContextManager.ts` — AudioContext, GainNode, FilterNode initialization and shared state
   - `useSequencer.ts` — 16-step sequencer with setTimeout-based scheduling
   - `useVCO.ts` — Oscillator creation and note quantization
-  - `usePhysicalVoice.ts` — Karplus-Strong plucked-string AudioWorklet, the VCO's "voice" engine
+  - `usePhysicalVoice.ts` — physical modeling AudioWorklet, the VCO's "voice" engine: three Rings-style resonator models (inharmonic Karplus-Strong string, sympathetic strings, modal filter bank)
   - `useEnvelope.ts` — ADSR envelope generators for VCA and VCF
 - `src/components/` — Vue components for each synth module
 - `src/types/` — TypeScript type definitions

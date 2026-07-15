@@ -1,7 +1,7 @@
 import { ref, watch } from 'vue';
 import type { AudioContextType, OscillatorSettings, FilterSettings, DelaySettings, LfoSettings, LfoTarget, ScopeSource, TimeDivision, VcaEnvelopeObject, FilterEnvelopeObject, MusicalKey, Octaves } from "@/types"
 import { useEnvelope } from "./useEnvelope";
-import { usePhysicalVoice } from "./usePhysicalVoice";
+import { usePhysicalVoice, resonatorModelIndex } from "./usePhysicalVoice";
 import { lfoSyncRate } from "@/utils/config";
 
 const { createEnvelope } = useEnvelope();
@@ -18,7 +18,7 @@ const filterEnabled = ref(true);
 // The filter envelope (ADSR sweep of the cutoff) is optional. When off, the
 // cutoff simply sits at the frequency set on the VCF panel.
 const filterEnvelopeEnabled = ref(true);
-const oscillatorSettings = ref<OscillatorSettings>({ baseFrequency: 147, type: "square", pulseWidth: 0.5, engine: 'oscillator', damping: 0.5, structure: 0, brightness: 1, position: 0 });
+const oscillatorSettings = ref<OscillatorSettings>({ baseFrequency: 147, type: "square", pulseWidth: 0.5, engine: 'oscillator', resonatorModel: 'string', damping: 0.5, structure: 0, brightness: 1, position: 0 });
 const filterSettings = ref<FilterSettings>({ frequency: 2500, q: 1, type: 'lowpass' })
 const selectedMusicalKey = ref<MusicalKey>("D")
 const selectedOctave = ref<Octaves>(3)
@@ -197,6 +197,10 @@ const applyVoiceSettings = () => {
     const ctx = audioContext.value
     const node = physicalVoiceNode.value
     if (!ctx || !node) return
+    // The resonator model is a discrete switch, not a glide.
+    node.parameters.get('model')?.setValueAtTime(
+        resonatorModelIndex(oscillatorSettings.value.resonatorModel), ctx.currentTime
+    )
     const voiceParams = ['damping', 'structure', 'brightness', 'position'] as const
     voiceParams.forEach((name) => {
         const value = Math.min(Math.max(oscillatorSettings.value[name], 0), 1)

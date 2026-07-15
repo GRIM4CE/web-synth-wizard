@@ -42,6 +42,7 @@ export const usePresets = () => {
     quantize,
     filterEnabled,
     filterEnvelopeEnabled,
+    vcaEnvelopeEnabled,
     filterSettings,
     filterEnvelope,
     vcaEnvelope,
@@ -76,6 +77,7 @@ export const usePresets = () => {
     filterEnvelopeEnabled: filterEnvelopeEnabled.value,
     filterSettings: { ...filterSettings.value },
     filterEnvelope: { ...filterEnvelope.envelope.value },
+    vcaEnvelopeEnabled: vcaEnvelopeEnabled.value,
     vcaEnvelope: { ...vcaEnvelope.envelope.value },
     delayEnabled: delayEnabled.value,
     delaySettings: { ...delaySettings.value },
@@ -134,6 +136,8 @@ export const usePresets = () => {
     quantize.value = preset.quantize
     filterEnabled.value = preset.filterEnabled
     filterEnvelopeEnabled.value = preset.filterEnvelopeEnabled
+    // Presets saved before the VCA envelope toggle existed default to on.
+    vcaEnvelopeEnabled.value = preset.vcaEnvelopeEnabled ?? true
     // Mutate in place so component watchers on individual fields fire and push
     // the new values onto any live audio nodes.
     Object.assign(filterSettings.value, preset.filterSettings)

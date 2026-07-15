@@ -42,6 +42,7 @@ export const useSequencer = ({
     lfoModulation,
     filterEnabled,
     filterEnvelopeEnabled,
+    vcaEnvelopeEnabled,
     filterEnvelope,
     vcaEnvelope,
     oscillatorSettings,
@@ -52,9 +53,9 @@ export const useSequencer = ({
 ) => {
     const steps = ref<Step[]>(Array.from({ length: 16 }, (_, i) => randomStep(i)));
 
-    // What drives the voice: the step grid, live keyboard/MIDI notes, or the
-    // Turing machine. The clock keeps ticking in every mode so switching back
-    // mid-performance stays in time; keyboard mode just ignores the ticks.
+    // What drives the voice: the step grid, live keyboard or MIDI notes, or
+    // the Turing machine. The clock keeps ticking in every mode so switching
+    // back mid-performance stays in time; live modes just ignore the ticks.
     const sequencerMode = ref<SequencerMode>('steps')
 
     // Turing machine (a simplified Music Thing style shift register): a loop
@@ -167,6 +168,39 @@ export const useSequencer = ({
         const now = audioContext.value.currentTime;
         filterNode.value.frequency.cancelScheduledValues(now);
         filterNode.value.frequency.setValueAtTime(filterEnvelope.envelope.value.frequency, now);
+    });
+
+    // With the VCA envelope off the amp just sits open at the panel gain and
+    // lets the voice through: the oscillator drones, the physical voice rings
+    // whenever its exciter is struck. Level moves ride a short ramp because an
+    // instant jump on a gain node clicks audibly.
+    const AMP_RAMP_SECONDS = 0.005;
+    function setAmpLevel(level: number) {
+        if (!gainNode.value || !audioContext.value) return;
+        const now = audioContext.value.currentTime;
+        const gainParam = gainNode.value.gain;
+        gainParam.cancelScheduledValues(now);
+        gainParam.setValueAtTime(Math.max(gainParam.value, 0.0001), now);
+        gainParam.exponentialRampToValueAtTime(Math.max(level, 0.0001), now + AMP_RAMP_SECONDS);
+    }
+
+    // Switching the envelope off opens the amp immediately (cancelling any
+    // in-flight ADSR ramp); switching it back on closes the amp so the next
+    // gate's attack starts from the silence it anchors to, and clears
+    // voiceActive so that gate retriggers even mid-run.
+    watch(vcaEnvelopeEnabled, (enabled) => {
+        if (enabled) {
+            setAmpLevel(0.0001);
+            voiceActive = false;
+        } else {
+            setAmpLevel(Number(vcaEnvelope.envelope.value.gain));
+        }
+    });
+
+    // With the amp held open, the gain slider is a live volume control.
+    watch(() => Number(vcaEnvelope.envelope.value.gain), (gain) => {
+        if (vcaEnvelopeEnabled.value) return;
+        setAmpLevel(gain);
     });
 
     // If the synth is (re)initialised the gain node is replaced, so the fresh node
@@ -315,7 +349,13 @@ export const useSequencer = ({
         }
 
         if (!voiceActive) {
-            vcaEnvelope.triggerAttack(gainNode.value, ctx, modulatedVcaEnvelope());
+            if (vcaEnvelopeEnabled.value) {
+                vcaEnvelope.triggerAttack(gainNode.value, ctx, modulatedVcaEnvelope());
+            } else {
+                // No envelope: make sure the amp is open (the first note after
+                // an init or a stop finds it at the silent floor).
+                setAmpLevel(Number(vcaEnvelope.envelope.value.gain));
+            }
             if (filterEnabled.value) {
                 if (filterEnvelopeEnabled.value) {
                     filterEnvelope.triggerAttack(filterNode.value, ctx, filterEnvelope.envelope);
@@ -353,7 +393,11 @@ export const useSequencer = ({
     // Release the gate so the tone stops until the next note.
     function closeGate() {
         if (!voiceActive || !audioContext.value || !gainNode.value || !filterNode.value) return;
-        vcaEnvelope.triggerRelease(gainNode.value, audioContext.value, modulatedVcaEnvelope());
+        // With the envelope off the amp stays open through rests — the voice
+        // drones; only the filter envelope (if on) still responds to the gate.
+        if (vcaEnvelopeEnabled.value) {
+            vcaEnvelope.triggerRelease(gainNode.value, audioContext.value, modulatedVcaEnvelope());
+        }
         if (filterEnabled.value && filterEnvelopeEnabled.value) {
             filterEnvelope.triggerRelease(filterNode.value, audioContext.value, filterEnvelope.envelope);
         }
@@ -363,8 +407,8 @@ export const useSequencer = ({
     function playStep(stepIndex: number) {
         if (!audioContext.value || !gainNode.value || !filterNode.value || !analyserNode.value) return;
 
-        // Keyboard/MIDI mode: the clock keeps time but notes are gated by hand.
-        if (sequencerMode.value === 'keyboard') return;
+        // Keyboard/MIDI modes: the clock keeps time but notes are gated by hand.
+        if (sequencerMode.value === 'keyboard' || sequencerMode.value === 'midi') return;
 
         if (sequencerMode.value === 'turing') {
             playTuringStep(stepIndex);

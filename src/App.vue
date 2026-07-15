@@ -28,10 +28,7 @@
   const canUseAudioContext = 'AudioContext' in window
 
   // Tabbed cards on every viewport, so the oscilloscope in the header stays on
-  // screen while any module is edited. Mobile shows the active panel; desktop
-  // shows the last TWO selected panels side by side — clicking a new tab
-  // replaces the older of the pair (the CSS decides how many are visible, so
-  // no breakpoint tracking is needed in JS).
+  // screen while any module is edited. Only the selected panel is shown.
   const tabs = [
     { id: 'clock', label: 'Clock' },
     { id: 'sequencer', label: 'Sequencer' },
@@ -43,14 +40,9 @@
   ]
 
   const activeTab = ref('sequencer')
-  const secondaryTab = ref('vcf')
   const tabRefs = ref<HTMLButtonElement[]>([])
 
   const selectTab = (id: string) => {
-    if (id === activeTab.value) return
-    // Selecting the visible secondary swaps the pair; anything else pushes the
-    // current primary into the secondary slot.
-    secondaryTab.value = activeTab.value
     activeTab.value = id
   }
 
@@ -111,7 +103,7 @@
         :key="tab.id"
         ref="tabRefs"
         class="synth-tab"
-        :class="{ 'is-active': activeTab === tab.id, 'is-secondary': secondaryTab === tab.id }"
+        :class="{ 'is-active': activeTab === tab.id }"
         type="button"
         role="tab"
         :id="`tab-${tab.id}`"
@@ -130,7 +122,7 @@
         v-for="tab in tabs"
         :key="tab.id"
         class="section synth-panel"
-        :class="{ 'is-active': activeTab === tab.id, 'is-secondary': secondaryTab === tab.id }"
+        :class="{ 'is-active': activeTab === tab.id }"
         :id="`panel-${tab.id}`"
         role="tabpanel"
         :aria-labelledby="`tab-${tab.id}`"
@@ -317,14 +309,6 @@
   border-color: var(--blue);
 }
 
-/* On desktop the previously selected module stays open in a second slot. */
-.synth-tab.is-secondary:not(.is-active) {
-  @include md {
-    color: var(--color-heading);
-    border-color: var(--green);
-  }
-}
-
 .synth-panels {
   display: grid;
   gap: 1rem;
@@ -343,16 +327,8 @@
   background: var(--color-background-soft);
 }
 
-/* Mobile: only the active panel. */
+/* Only the active panel is visible. */
 .synth-panel:not(.is-active) {
   display: none;
-}
-
-@include md {
-  /* Desktop: the active panel plus the previous one, stacked in the left
-     column while the scope stays pinned on the right. */
-  .synth-panel.is-secondary {
-    display: block;
-  }
 }
 </style>

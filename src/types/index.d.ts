@@ -38,6 +38,7 @@ export type UseSequancerParams = {
     physicalVoiceNode: Ref<AudioWorkletNode | null>,
     filterEnabled: Ref<boolean>,
     filterEnvelopeEnabled: Ref<boolean>,
+    vcaEnvelopeEnabled: Ref<boolean>,
     filterEnvelope: FilterEnvelopeObject,
     vcaEnvelope: VcaEnvelopeObject,
     oscillatorSettings: Ref<OscillatorSettings>
@@ -155,6 +156,7 @@ export type SynthPreset = {
     filterEnvelopeEnabled: boolean,
     filterSettings: FilterSettings,
     filterEnvelope: FilterEnvelope,
+    vcaEnvelopeEnabled?: boolean, // Optional: presets saved before the VCA envelope toggle existed lack this
     vcaEnvelope: VcaEnvelope,
     delayEnabled: boolean,
     delaySettings: DelaySettings,

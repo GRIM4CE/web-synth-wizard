@@ -38,6 +38,7 @@ export const useSequencer = ({
     physicalVoiceNode,
     filterEnabled,
     filterEnvelopeEnabled,
+    vcaEnvelopeEnabled,
     filterEnvelope,
     vcaEnvelope,
     oscillatorSettings,
@@ -163,6 +164,26 @@ export const useSequencer = ({
         filterNode.value.frequency.setValueAtTime(filterEnvelope.envelope.value.frequency, now);
     });
 
+    // With the VCA envelope off the amp is a plain gate that snaps between the
+    // panel gain and silence. The snap rides a short ramp because an instant
+    // jump on a gain node clicks audibly.
+    const GATE_RAMP_SECONDS = 0.005;
+    function setGateLevel(level: number) {
+        if (!gainNode.value || !audioContext.value) return;
+        const now = audioContext.value.currentTime;
+        const gainParam = gainNode.value.gain;
+        gainParam.cancelScheduledValues(now);
+        gainParam.setValueAtTime(Math.max(gainParam.value, 0.0001), now);
+        gainParam.exponentialRampToValueAtTime(Math.max(level, 0.0001), now + GATE_RAMP_SECONDS);
+    }
+
+    // When the VCA envelope is switched off mid-note, cancel any in-flight
+    // ADSR ramp and pin the amp at the plain gate level for the current state.
+    watch(vcaEnvelopeEnabled, (enabled) => {
+        if (enabled) return;
+        setGateLevel(voiceActive ? Number(vcaEnvelope.envelope.value.gain) : 0.0001);
+    });
+
     // If the synth is (re)initialised the gain node is replaced, so the fresh node
     // needs wiring up again on the next step.
     watch(gainNode, () => {
@@ -267,7 +288,12 @@ export const useSequencer = ({
         }
 
         if (!voiceActive) {
-            vcaEnvelope.triggerAttack(gainNode.value, ctx, vcaEnvelope.envelope);
+            if (vcaEnvelopeEnabled.value) {
+                vcaEnvelope.triggerAttack(gainNode.value, ctx, vcaEnvelope.envelope);
+            } else {
+                // No envelope: the amp just opens to the panel gain.
+                setGateLevel(Number(vcaEnvelope.envelope.value.gain));
+            }
             if (filterEnabled.value) {
                 if (filterEnvelopeEnabled.value) {
                     filterEnvelope.triggerAttack(filterNode.value, ctx, filterEnvelope.envelope);
@@ -283,7 +309,11 @@ export const useSequencer = ({
     // Release the gate so the tone stops until the next note.
     function closeGate() {
         if (!voiceActive || !audioContext.value || !gainNode.value || !filterNode.value) return;
-        vcaEnvelope.triggerRelease(gainNode.value, audioContext.value, vcaEnvelope.envelope);
+        if (vcaEnvelopeEnabled.value) {
+            vcaEnvelope.triggerRelease(gainNode.value, audioContext.value, vcaEnvelope.envelope);
+        } else {
+            setGateLevel(0.0001);
+        }
         if (filterEnabled.value && filterEnvelopeEnabled.value) {
             filterEnvelope.triggerRelease(filterNode.value, audioContext.value, filterEnvelope.envelope);
         }

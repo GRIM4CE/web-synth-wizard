@@ -18,6 +18,9 @@ const filterEnabled = ref(true);
 // The filter envelope (ADSR sweep of the cutoff) is optional. When off, the
 // cutoff simply sits at the frequency set on the VCF panel.
 const filterEnvelopeEnabled = ref(true);
+// The VCA envelope is optional too. When off, the amp acts as a plain gate:
+// it opens straight to the panel gain on note-on and shuts on note-off.
+const vcaEnvelopeEnabled = ref(true);
 const oscillatorSettings = ref<OscillatorSettings>({ baseFrequency: 147, type: "square", pulseWidth: 0.5, engine: 'oscillator', resonatorModel: 'string', damping: 0.5, structure: 0, brightness: 1, position: 0 });
 const filterSettings = ref<FilterSettings>({ frequency: 2500, q: 1, type: 'lowpass' })
 const selectedMusicalKey = ref<MusicalKey>("D")
@@ -383,5 +386,5 @@ export const useAudioContextManager = () => {
         applyScopeSource()
     };
 
-    return { initSynth, clock, timeDivision, audioContext, gainNode, analyserNode, filterEnabled, filterEnvelopeEnabled, vcaEnvelope, oscillatorSettings, filterNode, filterSettings, filterEnvelope, selectedMusicalKey, selectedOctave, quantize, effectsInputNode, delayNode, delayEnabled, delaySettings, applyDelaySettings, lfoSettings, applyLfoSettings, voiceOscillator, physicalVoiceNode, tremoloNode, preFxTapNode, masterOutNode, scopeSource, pulseInputNode, vcoTapNode, applyPulseWidth, applyVoiceSettings };
+    return { initSynth, clock, timeDivision, audioContext, gainNode, analyserNode, filterEnabled, filterEnvelopeEnabled, vcaEnvelopeEnabled, vcaEnvelope, oscillatorSettings, filterNode, filterSettings, filterEnvelope, selectedMusicalKey, selectedOctave, quantize, effectsInputNode, delayNode, delayEnabled, delaySettings, applyDelaySettings, lfoSettings, applyLfoSettings, voiceOscillator, physicalVoiceNode, tremoloNode, preFxTapNode, masterOutNode, scopeSource, pulseInputNode, vcoTapNode, applyPulseWidth, applyVoiceSettings };
 }

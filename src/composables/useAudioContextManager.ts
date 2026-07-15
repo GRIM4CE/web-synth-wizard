@@ -1,8 +1,10 @@
 import { ref, watch } from 'vue';
 import type { AudioContextType, OscillatorSettings, FilterSettings, DelaySettings, LfoSettings, LfoTarget, ScopeSource, TimeDivision, VcaEnvelopeObject, FilterEnvelopeObject, MusicalKey, Octaves } from "@/types"
 import { useEnvelope } from "./useEnvelope";
+import { usePhysicalVoice } from "./usePhysicalVoice";
 
 const { createEnvelope } = useEnvelope();
+const { createPhysicalVoiceNode } = usePhysicalVoice();
 
 
 const clock = ref<number>(135)
@@ -15,7 +17,7 @@ const filterEnabled = ref(true);
 // The filter envelope (ADSR sweep of the cutoff) is optional. When off, the
 // cutoff simply sits at the frequency set on the VCF panel.
 const filterEnvelopeEnabled = ref(true);
-const oscillatorSettings = ref<OscillatorSettings>({ baseFrequency: 147, type: "square", pulseWidth: 0.5 });
+const oscillatorSettings = ref<OscillatorSettings>({ baseFrequency: 147, type: "square", pulseWidth: 0.5, engine: 'oscillator', damping: 0.5 });
 const filterSettings = ref<FilterSettings>({ frequency: 2500, q: 1, type: 'lowpass' })
 const selectedMusicalKey = ref<MusicalKey>("D")
 const selectedOctave = ref<Octaves>(3)
@@ -24,6 +26,13 @@ const quantize = ref(true)
 // The live voice oscillator (owned by the sequencer). Tracked here so LFOs and
 // the oscilloscope can attach to it whenever it is (re)created.
 const voiceOscillator = ref<OscillatorNode | null>(null);
+
+// The physical modeling voice (Karplus-Strong plucked string), the VCO's
+// alternative engine. Built once per synth init and permanently wired into the
+// VCA like the pulse chain: it is silent until plucked, so leaving it
+// connected costs nothing and avoids click-prone rewiring. Null when
+// AudioWorklet is unavailable, in which case the oscillator engine is used.
+const physicalVoiceNode = ref<AudioWorkletNode | null>(null);
 
 // Tremolo stage: sits after the VCA so a volume LFO multiplies the enveloped
 // signal (base gain 1). Modulating the VCA's own gain would instead ADD to the
@@ -132,7 +141,14 @@ const applyDelaySettings = () => {
 // relevant node exists).
 const lfoTargetParam = (target: LfoTarget): AudioParam | null => {
     switch (target) {
-        case 'pitch': return voiceOscillator.value ? voiceOscillator.value.detune : null
+        // Pitch follows the selected engine: the physical voice exposes its own
+        // detune AudioParam (cents), mirroring OscillatorNode's.
+        case 'pitch': {
+            if (oscillatorSettings.value.engine === 'voice' && physicalVoiceNode.value) {
+                return physicalVoiceNode.value.parameters.get('detune') ?? null
+            }
+            return voiceOscillator.value ? voiceOscillator.value.detune : null
+        }
         case 'pulseWidth': return pwConstantNode ? pwConstantNode.offset : null
         case 'cutoff': return filterNode.value ? filterNode.value.detune : null
         case 'resonance': return filterNode.value ? filterNode.value.Q : null
@@ -167,6 +183,16 @@ const applyLfoSettings = () => {
             if (param) nodes.depth.connect(param)
         }
     })
+}
+
+// Push the stored damping onto the live physical voice. Safe to call any time;
+// does nothing until the synth has been initialised.
+const applyVoiceSettings = () => {
+    const ctx = audioContext.value
+    const node = physicalVoiceNode.value
+    if (!ctx || !node) return
+    const damping = Math.min(Math.max(oscillatorSettings.value.damping, 0), 1)
+    node.parameters.get('damping')?.setTargetAtTime(damping, ctx.currentTime, 0.05)
 }
 
 // Set the comparator threshold from the stored pulse width. With a sawtooth
@@ -214,6 +240,10 @@ watch(scopeSource, () => applyScopeSource())
 
 // Delay-targeted LFOs attach/detach when the delay is toggled.
 watch(delayEnabled, () => applyLfoSettings())
+
+// A pitch LFO must jump between the oscillator's detune and the physical
+// voice's when the engine changes.
+watch(() => oscillatorSettings.value.engine, () => applyLfoSettings())
 
 export const useAudioContextManager = () => {
 
@@ -277,6 +307,14 @@ export const useAudioContextManager = () => {
         comparator.connect(vcoTap)
         vcoTapNode.value = vcoTap
 
+        // Physical modeling voice: silent until plucked, so it stays wired to
+        // both the VCA and the scope tap regardless of the selected engine.
+        physicalVoiceNode.value = await createPhysicalVoiceNode(audioContext.value)
+        if (physicalVoiceNode.value) {
+            physicalVoiceNode.value.connect(gain)
+            physicalVoiceNode.value.connect(vcoTap)
+        }
+
         // Master output: everything audible funnels through here to the
         // destination, giving the scope a stable full-chain tap point.
         const masterOut = audioContext.value.createGain()
@@ -323,10 +361,11 @@ export const useAudioContextManager = () => {
 
         applyDelaySettings()
         applyPulseWidth()
+        applyVoiceSettings()
         applyLfoSettings()
         scopeTapNode = null
         applyScopeSource()
     };
 
-    return { initSynth, clock, timeDivision, audioContext, gainNode, analyserNode, filterEnabled, filterEnvelopeEnabled, vcaEnvelope, oscillatorSettings, filterNode, filterSettings, filterEnvelope, selectedMusicalKey, selectedOctave, quantize, effectsInputNode, delayNode, delayEnabled, delaySettings, applyDelaySettings, lfoSettings, applyLfoSettings, voiceOscillator, tremoloNode, preFxTapNode, masterOutNode, scopeSource, pulseInputNode, vcoTapNode, applyPulseWidth };
+    return { initSynth, clock, timeDivision, audioContext, gainNode, analyserNode, filterEnabled, filterEnvelopeEnabled, vcaEnvelope, oscillatorSettings, filterNode, filterSettings, filterEnvelope, selectedMusicalKey, selectedOctave, quantize, effectsInputNode, delayNode, delayEnabled, delaySettings, applyDelaySettings, lfoSettings, applyLfoSettings, voiceOscillator, physicalVoiceNode, tremoloNode, preFxTapNode, masterOutNode, scopeSource, pulseInputNode, vcoTapNode, applyPulseWidth, applyVoiceSettings };
 }

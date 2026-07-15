@@ -51,6 +51,7 @@ export const usePresets = () => {
     lfoSettings,
     applyLfoSettings,
     applyPulseWidth,
+    applyVoiceSettings,
     steps
   } = useAudioContext()
 
@@ -98,12 +99,16 @@ export const usePresets = () => {
 
     clock.value = preset.clock
     timeDivision.value = preset.timeDivision
-    // Presets saved before pulse width existed default to a symmetric square.
+    // Presets saved before pulse width / the voice engine existed default to a
+    // symmetric square on the oscillator engine.
     oscillatorSettings.value = {
       ...preset.oscillatorSettings,
-      pulseWidth: preset.oscillatorSettings.pulseWidth ?? 0.5
+      pulseWidth: preset.oscillatorSettings.pulseWidth ?? 0.5,
+      engine: preset.oscillatorSettings.engine ?? 'oscillator',
+      damping: preset.oscillatorSettings.damping ?? 0.5
     }
     applyPulseWidth()
+    applyVoiceSettings()
     selectedMusicalKey.value = preset.selectedMusicalKey
     selectedOctave.value = preset.selectedOctave
     quantize.value = preset.quantize

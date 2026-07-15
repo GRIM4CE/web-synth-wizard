@@ -1,6 +1,7 @@
 import { ref, watch } from 'vue';
 
 import { useVCO } from "./useVCO"
+import { usePhysicalVoice } from "./usePhysicalVoice"
 import { getRandomNote } from '@/utils/generator';
 
 import type { Step, UseSequancerParams } from "../types"
@@ -17,6 +18,7 @@ export const useSequencer = ({
     vcoTapNode,
     tremoloNode,
     voiceOscillator,
+    physicalVoiceNode,
     filterEnabled,
     filterEnvelopeEnabled,
     filterEnvelope,
@@ -47,6 +49,7 @@ export const useSequencer = ({
     let voiceActive = false;
 
     const {createOscillator, getFrequency} = useVCO()
+    const {pluckVoice} = usePhysicalVoice()
 
     // Wire the voice oscillator to the VCA, honouring the selected waveform.
     // A square is produced by the pulse-width chain (sawtooth into a comparator,
@@ -140,19 +143,24 @@ export const useSequencer = ({
         stopVoice();
     }
 
+    // Tear down just the oscillator (used when stopping, and when the physical
+    // voice engine takes over mid-sequence).
+    function teardownOscillator() {
+        if (!currentOscillator) return;
+        try {
+            currentOscillator.stop();
+        } catch {
+            // Oscillator may already be stopped or its context closed.
+        }
+        currentOscillator.disconnect();
+        currentOscillator = null;
+        voiceOscillator.value = null;
+        voiceWiring = null;
+    }
+
     // Silence and tear down the monophonic voice.
     function stopVoice() {
-        if (currentOscillator) {
-            try {
-                currentOscillator.stop();
-            } catch {
-                // Oscillator may already be stopped or its context closed.
-            }
-            currentOscillator.disconnect();
-            currentOscillator = null;
-            voiceOscillator.value = null;
-            voiceWiring = null;
-        }
+        teardownOscillator();
         voiceActive = false;
         if (gainNode.value && audioContext.value) {
             const now = audioContext.value.currentTime;
@@ -191,7 +199,16 @@ export const useSequencer = ({
                 quantize
             };
 
-            if (!currentOscillator) {
+            const usePhysical = oscillatorSettings.value.engine === 'voice' && !!physicalVoiceNode.value;
+
+            if (usePhysical) {
+                // The physical voice replaces the oscillator entirely; silence the
+                // oscillator in case the engine was switched mid-sequence.
+                teardownOscillator();
+                // A pluck is a note-on, not a retune — a string has no
+                // phase-continuous legato — so every active step re-excites it.
+                pluckVoice(physicalVoiceNode.value!, getFrequency(params), oscillatorSettings.value.damping, ctx.currentTime);
+            } else if (!currentOscillator) {
                 // Start the single voice and keep it running for the whole sequence.
                 currentOscillator = createOscillator(params);
                 wireOscillator(currentOscillator);

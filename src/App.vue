@@ -139,8 +139,12 @@
   width: 100%;
   min-height: 100vh;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1rem;
   align-content: center;
+
+  @include md {
+    padding: 2rem;
+  }
 }
 
 .main-container {
@@ -311,7 +315,6 @@
 
 .synth-panels {
   display: grid;
-  gap: 1rem;
 
   @include md {
     grid-column: 1;
@@ -320,15 +323,20 @@
   }
 }
 
+/* All panels share one grid cell, so the container always has the height of
+   the tallest panel and the page never jumps when switching tabs. */
 .synth-panel {
+  grid-area: 1 / 1;
+  min-width: 0;
   padding: 1.25rem 1rem;
   border: 1px solid var(--color-background-mute);
   border-radius: 8px;
   background: var(--color-background-soft);
 }
 
-/* Only the active panel is visible. */
+/* Only the active panel is visible (and interactive); visibility keeps the
+   hidden panels' height in the layout, unlike display: none. */
 .synth-panel:not(.is-active) {
-  display: none;
+  visibility: hidden;
 }
 </style>

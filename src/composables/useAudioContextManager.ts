@@ -18,7 +18,7 @@ const filterEnabled = ref(true);
 // The filter envelope (ADSR sweep of the cutoff) is optional. When off, the
 // cutoff simply sits at the frequency set on the VCF panel.
 const filterEnvelopeEnabled = ref(true);
-const oscillatorSettings = ref<OscillatorSettings>({ baseFrequency: 147, type: "square", pulseWidth: 0.5, engine: 'oscillator', damping: 0.5 });
+const oscillatorSettings = ref<OscillatorSettings>({ baseFrequency: 147, type: "square", pulseWidth: 0.5, engine: 'oscillator', damping: 0.5, structure: 0, brightness: 1, position: 0 });
 const filterSettings = ref<FilterSettings>({ frequency: 2500, q: 1, type: 'lowpass' })
 const selectedMusicalKey = ref<MusicalKey>("D")
 const selectedOctave = ref<Octaves>(3)
@@ -191,14 +191,17 @@ const applyLfoSettings = () => {
     })
 }
 
-// Push the stored damping onto the live physical voice. Safe to call any time;
-// does nothing until the synth has been initialised.
+// Push the stored voice tone controls onto the live physical voice. Safe to
+// call any time; does nothing until the synth has been initialised.
 const applyVoiceSettings = () => {
     const ctx = audioContext.value
     const node = physicalVoiceNode.value
     if (!ctx || !node) return
-    const damping = Math.min(Math.max(oscillatorSettings.value.damping, 0), 1)
-    node.parameters.get('damping')?.setTargetAtTime(damping, ctx.currentTime, 0.05)
+    const voiceParams = ['damping', 'structure', 'brightness', 'position'] as const
+    voiceParams.forEach((name) => {
+        const value = Math.min(Math.max(oscillatorSettings.value[name], 0), 1)
+        node.parameters.get(name)?.setTargetAtTime(value, ctx.currentTime, 0.05)
+    })
 }
 
 // Set the comparator threshold from the stored pulse width. With a sawtooth

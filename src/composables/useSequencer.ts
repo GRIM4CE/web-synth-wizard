@@ -250,7 +250,7 @@ export const useSequencer = ({
             teardownOscillator();
             // A pluck is a note-on, not a retune — a string has no
             // phase-continuous legato — so every gate re-excites it.
-            pluckVoice(physicalVoiceNode.value!, frequency, oscillatorSettings.value.damping, ctx.currentTime);
+            pluckVoice(physicalVoiceNode.value!, frequency, oscillatorSettings.value, ctx.currentTime);
         } else if (!currentOscillator) {
             // Start the single voice and keep it running for the whole sequence.
             currentOscillator = ctx.createOscillator();

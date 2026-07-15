@@ -84,7 +84,10 @@ watch([delayEnabled, delaySettings], () => applyDelaySettings(), { deep: true })
 
 .web-effects-slider-wrapper {
   display: flex;
-  column-gap: 1.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem 1.5rem;
+  max-width: 100%;
 }
 
 .web-effects-slider {

@@ -50,8 +50,9 @@ const updateValue = (event: Event) => {
 
     .d-slider {
         -webkit-appearance: none;
-        appearance: none; 
+        appearance: none;
         width: 150px;
+        max-width: 100%;
 
         cursor: pointer;
         outline: none;

@@ -32,8 +32,15 @@
   font-weight: normal;
 }
 
+html {
+  /* Nothing may break out of the viewport horizontally; clip (not hidden)
+     avoids turning the root into a scroll container. */
+  overflow-x: clip;
+}
+
 body {
   min-height: 100vh;
+  overflow-x: clip;
   color: var(--color-text);
   background: var(--color-background);
   line-height: 1.6;
@@ -62,7 +69,18 @@ h3,
 h4,
 h5,
 h6 {
-  color: var(--color-heading)
+  color: var(--color-heading);
+  /* Long module titles must wrap on narrow screens, not overflow. */
+  overflow-wrap: break-word;
+}
+
+/* Replaced and form elements never grow past their container. */
+img,
+canvas,
+select,
+input,
+button {
+  max-width: 100%;
 }
 
 /* Visually hide content while keeping it available to assistive technology */

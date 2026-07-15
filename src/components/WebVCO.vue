@@ -6,7 +6,7 @@ import type { MusicalKey, Octaves } from "@/types"
 import DCheckbox from "./DCheckbox.vue";
 
 // Use the shared AudioContext and GainNode
-const { oscillatorSettings, selectedMusicalKey, selectedOctave, quantize, calculateFrequency, applyPulseWidth, applyVoiceSettings } = useAudioContext();
+const { oscillatorSettings, subOscillatorSettings, selectedMusicalKey, selectedOctave, quantize, calculateFrequency, applyPulseWidth, applyVoiceSettings } = useAudioContext();
 
 // 'oscillator' = classic waveforms, 'voice' = physical modeling (plucked string)
 const engines = ["oscillator", "voice"];
@@ -160,6 +160,57 @@ watch(selectedOctave, (newSelectedOctave: Octaves) => {
         <p>Pulse Width: {{ Math.round(oscillatorSettings.pulseWidth * 100) }}%</p>
       </div>
 
+      <!-- Stacked sub-oscillators (oscillator engine only): each follows the
+           main pitch, offset by its own detune. Edits are pushed onto the live
+           nodes by the audio manager's own watcher. -->
+      <template v-if="oscillatorSettings.engine === 'oscillator'">
+        <div class="web-vco-sub" v-for="(sub, index) in subOscillatorSettings" :key="index">
+          <div class="web-vco-sub-header">
+            <label :for="`sub-osc-${index}-enabled`">VCO {{ index + 2 }}: {{ sub.enabled ? 'On' : 'Off' }}</label>
+            <DCheckbox
+              :id="`sub-osc-${index}-enabled`"
+              :aria-label="`Enable VCO ${index + 2}`"
+              v-model="sub.enabled"
+            />
+          </div>
+
+          <template v-if="sub.enabled">
+            <div class="web-vco-field">
+              <label :for="`sub-osc-${index}-wave`">Wave:</label>
+              <select v-model="sub.type" :id="`sub-osc-${index}-wave`">
+                <option v-for="wave in waves" :key="wave" :value="wave">{{ wave }}</option>
+              </select>
+            </div>
+
+            <div class="web-vco-sub-slider">
+              <DSlider
+                type="range"
+                :min="-1200"
+                :max="1200"
+                step="1"
+                :id="`sub-osc-${index}-detune`"
+                :aria-label="`VCO ${index + 2} detune`"
+                v-model="sub.detune"
+              />
+              <p>Detune: {{ Math.round(sub.detune) }} cents</p>
+            </div>
+
+            <div class="web-vco-sub-slider">
+              <DSlider
+                type="range"
+                :min="0"
+                :max="1"
+                step="0.01"
+                :id="`sub-osc-${index}-level`"
+                :aria-label="`VCO ${index + 2} level`"
+                v-model="sub.level"
+              />
+              <p>Level: {{ Math.round(sub.level * 100) }}%</p>
+            </div>
+          </template>
+        </div>
+      </template>
+
       <template v-if="oscillatorSettings.engine === 'voice'">
         <div class="web-vco-freq" v-for="control in voiceControls" :key="control.key">
           <DSlider
@@ -236,6 +287,34 @@ watch(selectedOctave, (newSelectedOctave: Octaves) => {
 .web-vco-hint {
   font-size: 12px;
   opacity: 0.7;
+}
+
+.web-vco-sub {
+  display: grid;
+  justify-items: center;
+  row-gap: 0.5rem;
+  width: 100%;
+  max-width: 26rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--color-border, rgba(128, 128, 128, 0.25));
+}
+
+.web-vco-sub-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.web-vco-sub-slider {
+  display: grid;
+  justify-items: center;
+  row-gap: 0.25rem;
+  width: 100%;
+}
+
+.web-vco-sub-slider :deep(.d-slider) {
+  width: 100%;
+  max-width: 20rem;
 }
 
 .web-vco-freq.is-disabled {

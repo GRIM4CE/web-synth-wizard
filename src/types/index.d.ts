@@ -36,6 +36,10 @@ export type UseSequancerParams = {
     tremoloNode: Ref<GainNode | null>,
     voiceOscillator: Ref<OscillatorNode | null>,
     physicalVoiceNode: Ref<AudioWorkletNode | null>,
+    subOscillatorNodes: Ref<(OscillatorNode | null)[]>,
+    subOscillatorGainNodes: Ref<GainNode[]>,
+    subOscillatorSettings: Ref<SubOscillatorSettings[]>,
+    lfoModulation: (target: LfoTarget) => number,
     filterEnabled: Ref<boolean>,
     filterEnvelopeEnabled: Ref<boolean>,
     vcaEnvelopeEnabled: Ref<boolean>,
@@ -68,6 +72,16 @@ export type OscillatorSettings = {
     position: number // Voice engine pluck position (0 = at the bridge, 1 = mid-string)
 }
 
+// An additional oscillator (VCO 2 / VCO 3) stacked on the main voice. Subs
+// follow the main oscillator's pitch, offset by their own detune, and mix
+// into the VCA through their own level gain.
+export type SubOscillatorSettings = {
+    enabled: boolean,
+    type: OscillatorType,
+    detune: number, // Offset from the main oscillator in cents (-1200 to 1200)
+    level: number // Mix level relative to the main oscillator (0 to 1)
+}
+
 export type FilterSettings = {
     frequency: number,
     q: number,
@@ -80,8 +94,32 @@ export type DelaySettings = {
     mix: number, // Wet/dry balance (0 = fully dry, 1 = fully wet)
 }
 
-// Parameters an LFO can modulate. Each maps to an AudioParam on a live node.
-export type LfoTarget = 'pitch' | 'pulseWidth' | 'cutoff' | 'resonance' | 'volume' | 'delayTime' | 'delayMix'
+export type ReverbSettings = {
+    decay: number, // Reverb tail length in milliseconds
+    mix: number, // Wet/dry balance (0 = fully dry, 1 = fully wet)
+}
+
+export type CompressorSettings = {
+    threshold: number, // Level above which compression kicks in, in dB (-60 to 0)
+    ratio: number, // Input/output dB ratio above the threshold (1 to 20)
+    attack: number, // Time in ms to reach full gain reduction
+    release: number, // Time in ms to let the gain reduction go
+    makeup: number // Post-compression makeup gain in dB (0 to 24)
+}
+
+// The chainable effects, in the order the signal passes through them.
+export type FxId = 'delay' | 'reverb' | 'compressor'
+
+// Parameters an LFO can modulate. Audio-domain targets map to an AudioParam on
+// a live node; the rest (Turing probability, VCA envelope times) live in JS and
+// are sampled from the LFO's waveform at each gate/step.
+export type LfoTarget =
+    | 'pitch' | 'detune' | 'pulseWidth'
+    | 'voiceDamping' | 'voiceStructure' | 'voiceBrightness' | 'voicePosition'
+    | 'cutoff' | 'resonance' | 'volume'
+    | 'delayTime' | 'delayMix' | 'reverbMix'
+    | 'turingProbability'
+    | 'vcaAttack' | 'vcaDecay' | 'vcaSustain' | 'vcaRelease'
 
 // Where the oscilloscope taps the signal chain: the raw oscillator, after the
 // VCA + filter (pre-effects), or the full chain at the output.
@@ -160,6 +198,12 @@ export type SynthPreset = {
     vcaEnvelope: VcaEnvelope,
     delayEnabled: boolean,
     delaySettings: DelaySettings,
+    reverbEnabled?: boolean, // Optional: presets saved before the reverb existed lack this
+    reverbSettings?: ReverbSettings,
+    compressorEnabled?: boolean, // Optional: presets saved before the compressor existed lack this
+    compressorSettings?: CompressorSettings,
+    fxChainOrder?: FxId[], // Optional: presets saved before the FX chain was reorderable lack this
+    subOscillators?: SubOscillatorSettings[], // Optional: presets saved before VCO 2/3 existed lack this
     lfos?: LfoSettings[], // Optional: presets saved before LFOs existed lack this
     steps: Step[],
 }

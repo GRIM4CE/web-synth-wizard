@@ -11,6 +11,19 @@ export const lfoSyncStepOptions: { value: number; label: string }[] = [
 export const lfoSyncRate = (bpm: number, timeDivision: number, syncSteps: number) =>
   (bpm / 60) * timeDivision / syncSteps
 
+// Instantaneous value (-1..1) of an LFO waveform at a phase (0..1). Used for
+// the JS-domain LFO targets (Turing probability, VCA envelope times), which
+// sample the waveform at gate time instead of wiring into an AudioParam.
+export const lfoWaveValue = (waveform: OscillatorType, phase: number): number => {
+  const wrapped = phase - Math.floor(phase)
+  switch (waveform) {
+    case 'square': return wrapped < 0.5 ? 1 : -1
+    case 'sawtooth': return 2 * wrapped - 1
+    case 'triangle': return 1 - 4 * Math.abs(wrapped - 0.5)
+    default: return Math.sin(2 * Math.PI * wrapped)
+  }
+}
+
 export const notes = {
     'C': 0,
     'C#': 1,

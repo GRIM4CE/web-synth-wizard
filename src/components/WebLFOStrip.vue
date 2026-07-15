@@ -13,15 +13,60 @@ const props = defineProps<{ index: number }>()
 const { lfoSettings, clock, timeDivision } = useAudioContext()
 const lfo = computed(() => lfoSettings.value[props.index])
 
-const targets: { value: LfoTarget; label: string }[] = [
-  { value: 'pitch', label: 'Pitch' },
-  { value: 'pulseWidth', label: 'Pulse width' },
-  { value: 'cutoff', label: 'Filter cutoff' },
-  { value: 'resonance', label: 'Resonance' },
-  { value: 'volume', label: 'Volume' },
-  { value: 'delayTime', label: 'Delay time' },
-  { value: 'delayMix', label: 'Delay mix' }
+// Targets grouped by the module they modulate, so the grown list stays
+// scannable in the dropdown.
+const targetGroups: { label: string; targets: { value: LfoTarget; label: string }[] }[] = [
+  {
+    label: 'VCO',
+    targets: [
+      { value: 'pitch', label: 'Pitch' },
+      { value: 'detune', label: 'VCO 2/3 detune' },
+      { value: 'pulseWidth', label: 'Pulse width' }
+    ]
+  },
+  {
+    label: 'Voice engine',
+    targets: [
+      { value: 'voiceDamping', label: 'Damping' },
+      { value: 'voiceStructure', label: 'Structure' },
+      { value: 'voiceBrightness', label: 'Brightness' },
+      { value: 'voicePosition', label: 'Position' }
+    ]
+  },
+  {
+    label: 'VCF',
+    targets: [
+      { value: 'cutoff', label: 'Filter cutoff' },
+      { value: 'resonance', label: 'Resonance' }
+    ]
+  },
+  {
+    label: 'VCA',
+    targets: [
+      { value: 'volume', label: 'Volume' },
+      { value: 'vcaAttack', label: 'Env attack' },
+      { value: 'vcaDecay', label: 'Env decay' },
+      { value: 'vcaSustain', label: 'Env sustain' },
+      { value: 'vcaRelease', label: 'Env release' }
+    ]
+  },
+  {
+    label: 'FX',
+    targets: [
+      { value: 'delayTime', label: 'Delay time' },
+      { value: 'delayMix', label: 'Delay mix' },
+      { value: 'reverbMix', label: 'Reverb mix' }
+    ]
+  },
+  {
+    label: 'Sequencer',
+    targets: [{ value: 'turingProbability', label: 'Turing probability' }]
+  }
 ]
+
+// The JS-domain targets are sampled once per gate/step instead of running
+// continuously; a small hint keeps that from reading as a broken LFO.
+const sampledTargets: LfoTarget[] = ['turingProbability', 'vcaAttack', 'vcaDecay', 'vcaSustain', 'vcaRelease']
 const waveforms: OscillatorType[] = ['sine', 'triangle', 'square', 'sawtooth']
 
 // Rate slider is logarithmic: slow sweeps (0.1Hz) and vibrato (5-7Hz) both need
@@ -57,11 +102,17 @@ const syncRateReadout = computed(() =>
       <div class="web-lfo-strip-row">
         <label :for="`lfo-${index}-target`">Target</label>
         <select :id="`lfo-${index}-target`" v-model="lfo.target">
-          <option v-for="target in targets" :key="target.value" :value="target.value">
-            {{ target.label }}
-          </option>
+          <optgroup v-for="group in targetGroups" :key="group.label" :label="group.label">
+            <option v-for="target in group.targets" :key="target.value" :value="target.value">
+              {{ target.label }}
+            </option>
+          </optgroup>
         </select>
       </div>
+
+      <p class="web-lfo-strip-hint" v-if="sampledTargets.includes(lfo.target)">
+        Sampled once per step/note, not continuously.
+      </p>
 
       <div class="web-lfo-strip-row">
         <label :for="`lfo-${index}-waveform`">Wave</label>
@@ -193,5 +244,11 @@ const syncRateReadout = computed(() =>
   color: var(--color-text);
   opacity: 0.7;
   font-variant-numeric: tabular-nums;
+}
+
+.web-lfo-strip-hint {
+  font-size: 11px;
+  opacity: 0.7;
+  text-align: center;
 }
 </style>

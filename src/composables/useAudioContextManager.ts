@@ -1,5 +1,5 @@
-import { ref } from 'vue';
-import type { AudioContextType, OscillatorSettings, FilterSettings, DelaySettings, TimeDivision, VcaEnvelopeObject, FilterEnvelopeObject, MusicalKey, Octaves } from "@/types"
+import { ref, watch } from 'vue';
+import type { AudioContextType, OscillatorSettings, FilterSettings, DelaySettings, LfoSettings, LfoTarget, ScopeSource, TimeDivision, VcaEnvelopeObject, FilterEnvelopeObject, MusicalKey, Octaves } from "@/types"
 import { useEnvelope } from "./useEnvelope";
 
 const { createEnvelope } = useEnvelope();
@@ -21,10 +21,19 @@ const selectedMusicalKey = ref<MusicalKey>("D")
 const selectedOctave = ref<Octaves>(3)
 const quantize = ref(true)
 
+// The live voice oscillator (owned by the sequencer). Tracked here so LFOs and
+// the oscilloscope can attach to it whenever it is (re)created.
+const voiceOscillator = ref<OscillatorNode | null>(null);
+
+// Tremolo stage: sits after the VCA so a volume LFO multiplies the enveloped
+// signal (base gain 1). Modulating the VCA's own gain would instead ADD to the
+// envelope and leak sound during rests.
+const tremoloNode = ref<GainNode | null>(null);
+
 // Effects bus (delay). The voice output feeds effectsInputNode, which splits into
-// a dry path and a delay/feedback loop; both meet again at the analyser. Keeping
-// the bus permanently wired means toggling the effect only changes gain values —
-// no graph rewiring, so no clicks.
+// a dry path and a delay/feedback loop; both meet again at the master output.
+// Keeping the bus permanently wired means toggling the effect only changes gain
+// values — no graph rewiring, so no clicks.
 const effectsInputNode = ref<GainNode | null>(null);
 const delayNode = ref<DelayNode | null>(null);
 const delayFeedbackNode = ref<GainNode | null>(null);
@@ -33,8 +42,36 @@ const delayDryNode = ref<GainNode | null>(null);
 const delayEnabled = ref(false);
 const delaySettings = ref<DelaySettings>({ time: 300, feedback: 0.35, mix: 0.35 })
 
+// Scope tap points. The analyser is a side-tap (it has no output connection), so
+// pointing the oscilloscope at a different stage never alters the audible path:
+//   'vco'    -> the raw voice oscillator
+//   'filter' -> preFxTapNode, after VCA/tremolo/filter but before effects
+//   'output' -> masterOutNode, the full chain as heard
+const preFxTapNode = ref<GainNode | null>(null);
+const masterOutNode = ref<GainNode | null>(null);
+const scopeSource = ref<ScopeSource>('output');
+let scopeTapNode: AudioNode | null = null;
+
 // Delay feedback must stay below unity or the loop grows louder forever.
 const MAX_FEEDBACK = 0.9
+
+// How a 0..1 LFO depth scales per target. Pitch and cutoff use the detune
+// AudioParams (cents), so the modulation is musical (multiplicative) and never
+// fights the Hz-based envelope scheduling on the same node.
+const LFO_TARGET_SCALE: Record<LfoTarget, number> = {
+    pitch: 1200, // cents: full depth is ±1 octave of vibrato
+    cutoff: 4800, // cents: full depth is ±4 octaves of cutoff sweep
+    volume: 0.9, // gain around the tremolo stage's base of 1
+    delayTime: 0.008, // seconds: full depth is ±8ms (chorus-like wobble)
+}
+
+const lfoSettings = ref<LfoSettings[]>([
+    { enabled: false, target: 'pitch', waveform: 'sine', rate: 5, depth: 0.1 },
+    { enabled: false, target: 'cutoff', waveform: 'sine', rate: 0.5, depth: 0.4 },
+    { enabled: false, target: 'volume', waveform: 'sine', rate: 4, depth: 0.4 },
+])
+// One oscillator + depth gain per LFO, rebuilt on each synth init.
+let lfoNodes: { oscillator: OscillatorNode, depth: GainNode }[] = []
 
 const vcaEnvelope = createEnvelope({
     attack: 30,
@@ -73,6 +110,75 @@ const applyDelaySettings = () => {
     delayDryNode.value.gain.setTargetAtTime(delayEnabled.value ? 1 - mix * 0.5 : 1, now, 0.05)
 }
 
+// Resolve the AudioParam an LFO target modulates right now (null until the
+// relevant node exists).
+const lfoTargetParam = (target: LfoTarget): AudioParam | null => {
+    switch (target) {
+        case 'pitch': return voiceOscillator.value ? voiceOscillator.value.detune : null
+        case 'cutoff': return filterNode.value ? filterNode.value.detune : null
+        case 'volume': return tremoloNode.value ? tremoloNode.value.gain : null
+        case 'delayTime': return delayNode.value ? delayNode.value.delayTime : null
+        default: return null
+    }
+}
+
+// Push the current LFO settings onto the live nodes and (re)wire each depth
+// gain to its target parameter. Safe to call any time.
+const applyLfoSettings = () => {
+    const ctx = audioContext.value
+    if (!ctx || !lfoNodes.length) return
+    const now = ctx.currentTime
+
+    lfoSettings.value.forEach((settings, index) => {
+        const nodes = lfoNodes[index]
+        if (!nodes) return
+        nodes.oscillator.type = settings.waveform
+        nodes.oscillator.frequency.setTargetAtTime(Math.max(settings.rate, 0.01), now, 0.05)
+        const depth = settings.enabled ? settings.depth * LFO_TARGET_SCALE[settings.target] : 0
+        nodes.depth.gain.setTargetAtTime(depth, now, 0.05)
+
+        // Rewire: the target param may have changed, or its node been recreated.
+        nodes.depth.disconnect()
+        if (settings.enabled) {
+            const param = lfoTargetParam(settings.target)
+            if (param) nodes.depth.connect(param)
+        }
+    })
+}
+
+// Connect the selected tap point to the analyser (and detach the previous one).
+const applyScopeSource = () => {
+    const analyser = analyserNode.value
+    if (!analyser) return
+
+    if (scopeTapNode) {
+        try {
+            scopeTapNode.disconnect(analyser)
+        } catch {
+            // The previous tap (or its context) may already be gone.
+        }
+        scopeTapNode = null
+    }
+
+    const source =
+        scopeSource.value === 'vco' ? voiceOscillator.value :
+        scopeSource.value === 'filter' ? preFxTapNode.value :
+        masterOutNode.value
+    if (source) {
+        source.connect(analyser)
+        scopeTapNode = source
+    }
+}
+
+// The voice oscillator is recreated by the sequencer; pitch LFOs and a 'vco'
+// scope tap must follow it onto the new node.
+watch(voiceOscillator, () => {
+    applyLfoSettings()
+    applyScopeSource()
+})
+
+watch(scopeSource, () => applyScopeSource())
+
 export const useAudioContextManager = () => {
 
     const initSynth = async () => {
@@ -101,24 +207,35 @@ export const useAudioContextManager = () => {
         filterNode.value = filter;
         const analyser = audioContext.value.createAnalyser();
         analyser.fftSize = 2048;
-        // The analyser sits just before the destination so the oscilloscope
-        // reflects the final output regardless of whether the filter is engaged.
-        analyser.connect(audioContext.value.destination);
         analyserNode.value = analyser;
 
-        // Build the effects bus: input -> dry -> analyser, and in parallel
-        // input -> delay -> wet -> analyser with delay -> feedback -> delay.
+        tremoloNode.value = audioContext.value.createGain()
+
+        // Master output: everything audible funnels through here to the
+        // destination, giving the scope a stable full-chain tap point.
+        const masterOut = audioContext.value.createGain()
+        masterOut.connect(audioContext.value.destination)
+        masterOutNode.value = masterOut
+
+        // Pre-effects tap: the voice (post VCA/tremolo/filter) lands here on its
+        // way into the effects bus.
+        const preFxTap = audioContext.value.createGain()
+        preFxTapNode.value = preFxTap
+
+        // Build the effects bus: input -> dry -> masterOut, and in parallel
+        // input -> delay -> wet -> masterOut with delay -> feedback -> delay.
         const effectsInput = audioContext.value.createGain()
         const delay = audioContext.value.createDelay(2)
         const feedback = audioContext.value.createGain()
         const wet = audioContext.value.createGain()
         const dry = audioContext.value.createGain()
 
+        preFxTap.connect(effectsInput)
         effectsInput.connect(dry)
-        dry.connect(analyser)
+        dry.connect(masterOut)
         effectsInput.connect(delay)
         delay.connect(wet)
-        wet.connect(analyser)
+        wet.connect(masterOut)
         delay.connect(feedback)
         feedback.connect(delay)
 
@@ -128,8 +245,21 @@ export const useAudioContextManager = () => {
         delayWetNode.value = wet
         delayDryNode.value = dry
 
+        // One always-running oscillator + depth gain per LFO slot.
+        lfoNodes = lfoSettings.value.map(() => {
+            const oscillator = audioContext.value!.createOscillator()
+            const depth = audioContext.value!.createGain()
+            depth.gain.value = 0
+            oscillator.connect(depth)
+            oscillator.start()
+            return { oscillator, depth }
+        })
+
         applyDelaySettings()
+        applyLfoSettings()
+        scopeTapNode = null
+        applyScopeSource()
     };
 
-    return { initSynth, clock, timeDivision, audioContext, gainNode, analyserNode, filterEnabled, filterEnvelopeEnabled, vcaEnvelope, oscillatorSettings, filterNode, filterSettings, filterEnvelope, selectedMusicalKey, selectedOctave, quantize, effectsInputNode, delayNode, delayEnabled, delaySettings, applyDelaySettings };
+    return { initSynth, clock, timeDivision, audioContext, gainNode, analyserNode, filterEnabled, filterEnvelopeEnabled, vcaEnvelope, oscillatorSettings, filterNode, filterSettings, filterEnvelope, selectedMusicalKey, selectedOctave, quantize, effectsInputNode, delayNode, delayEnabled, delaySettings, applyDelaySettings, lfoSettings, applyLfoSettings, voiceOscillator, tremoloNode, preFxTapNode, masterOutNode, scopeSource };
 }

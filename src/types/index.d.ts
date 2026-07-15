@@ -19,7 +19,9 @@ export type UseSequancerParams = {
     filterNode: Ref<BiquadFilterNode | null>,
     gainNode: Ref<GainNode | null>,
     analyserNode: Ref<AnalyserNode | null>,
-    effectsInputNode: Ref<GainNode | null>,
+    preFxTapNode: Ref<GainNode | null>,
+    tremoloNode: Ref<GainNode | null>,
+    voiceOscillator: Ref<OscillatorNode | null>,
     filterEnabled: Ref<boolean>,
     filterEnvelopeEnabled: Ref<boolean>,
     filterEnvelope: FilterEnvelopeObject,
@@ -45,6 +47,21 @@ export type DelaySettings = {
     time: number, // Delay time in milliseconds
     feedback: number, // Feedback amount (0 to <1), how much of the echo is fed back in
     mix: number, // Wet/dry balance (0 = fully dry, 1 = fully wet)
+}
+
+// Parameters an LFO can modulate. Each maps to an AudioParam on a live node.
+export type LfoTarget = 'pitch' | 'cutoff' | 'volume' | 'delayTime'
+
+// Where the oscilloscope taps the signal chain: the raw oscillator, after the
+// VCA + filter (pre-effects), or the full chain at the output.
+export type ScopeSource = 'vco' | 'filter' | 'output'
+
+export type LfoSettings = {
+    enabled: boolean,
+    target: LfoTarget,
+    waveform: OscillatorType,
+    rate: number, // LFO frequency in Hz
+    depth: number, // Modulation amount (0 to 1), scaled per target
 }
 
 export type CreateOscillatorParams ={
@@ -109,5 +126,6 @@ export type SynthPreset = {
     vcaEnvelope: VcaEnvelope,
     delayEnabled: boolean,
     delaySettings: DelaySettings,
+    lfos?: LfoSettings[], // Optional: presets saved before LFOs existed lack this
     steps: Step[],
 }

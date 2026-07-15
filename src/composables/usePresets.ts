@@ -48,6 +48,8 @@ export const usePresets = () => {
     delayEnabled,
     delaySettings,
     applyDelaySettings,
+    lfoSettings,
+    applyLfoSettings,
     steps
   } = useAudioContext()
 
@@ -66,6 +68,7 @@ export const usePresets = () => {
     vcaEnvelope: { ...vcaEnvelope.envelope.value },
     delayEnabled: delayEnabled.value,
     delaySettings: { ...delaySettings.value },
+    lfos: lfoSettings.value.map((lfo) => ({ ...lfo })),
     steps: steps.value.map((step) => ({ ...step }))
   })
 
@@ -108,6 +111,13 @@ export const usePresets = () => {
     delayEnabled.value = preset.delayEnabled
     Object.assign(delaySettings.value, preset.delaySettings)
     applyDelaySettings()
+    // Presets saved before LFOs existed have no lfos entry; leave current state.
+    if (preset.lfos) {
+      lfoSettings.value.forEach((lfo, index) => {
+        if (preset.lfos && preset.lfos[index]) Object.assign(lfo, preset.lfos[index])
+      })
+      applyLfoSettings()
+    }
     steps.value = preset.steps.map((step) => ({ ...step }))
 
     selectedPresetName.value = preset.name

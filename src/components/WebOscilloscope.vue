@@ -4,7 +4,33 @@ import { useAudioContext } from '@/composables/useAudioContext'
 import DSlider from './DSlider.vue'
 
 // The analyser is created lazily when the synth is activated, so it may be null on first render.
-const { analyserNode, audioContext } = useAudioContext()
+const {
+  analyserNode,
+  audioContext,
+  scopeSource,
+  oscillatorSettings,
+  filterEnabled,
+  filterEnvelopeEnabled,
+  filterSettings,
+  filterEnvelope,
+  vcaEnvelope,
+  delayEnabled,
+  delaySettings,
+  lfoSettings,
+  steps,
+  clock,
+  timeDivision,
+  selectedMusicalKey,
+  selectedOctave,
+  quantize
+} = useAudioContext()
+
+// Signal-chain tap points the scope can display.
+const scopeSources = [
+  { value: 'vco', label: 'VCO' },
+  { value: 'filter', label: 'VCO+VCF' },
+  { value: 'output', label: 'Out' }
+] as const
 
 const canvas = ref<HTMLCanvasElement | null>(null)
 let animationId: number | undefined
@@ -61,6 +87,48 @@ function toggleFreeze() {
   }
   frozen.value = !frozen.value
 }
+
+// While frozen the scope keeps sampling in the background. When any
+// sound-shaping parameter changes, the held view refreshes: the best-frame
+// tracker is reset so only post-change audio competes, and after the sound has
+// settled the strongest new frame replaces the frozen one (still frozen, just
+// showing the new state of the signal).
+let recaptureTimer: ReturnType<typeof setTimeout> | undefined
+
+function scheduleFrozenRecapture() {
+  if (!frozen.value) return
+  bestFrame = null
+  bestPeak = 0
+  clearTimeout(recaptureTimer)
+  recaptureTimer = setTimeout(() => {
+    if (!frozen.value) return
+    frozenFrame = bestFrame ?? lastFrame
+    if (frozenFrame) fitVoltageToFrame(frozenFrame)
+  }, 500)
+}
+
+watch(
+  [
+    scopeSource,
+    oscillatorSettings,
+    filterEnabled,
+    filterEnvelopeEnabled,
+    filterSettings,
+    filterEnvelope.envelope,
+    vcaEnvelope.envelope,
+    delayEnabled,
+    delaySettings,
+    lfoSettings,
+    steps,
+    clock,
+    timeDivision,
+    selectedMusicalKey,
+    selectedOctave,
+    quantize
+  ],
+  scheduleFrozenRecapture,
+  { deep: true }
+)
 
 // Readout for the timing control: how many milliseconds of signal span the screen.
 const timingReadout = computed(() => {
@@ -189,37 +257,32 @@ function draw() {
     return
   }
 
-  let dataArray: Float32Array | null
+  // Always sample fresh audio, even while frozen, so a parameter change can
+  // refresh the held view with the new signal. Float data keeps full
+  // resolution — byte-based sampling quantised quiet signals to a handful of
+  // levels, which made clean waves look noisy and stepped.
+  const live = new Float32Array(analyser.fftSize)
+  analyser.getFloatTimeDomainData(live)
+  lastFrame = live
 
-  if (frozen.value) {
-    // Hold: keep displaying the best frame captured before freezing.
-    dataArray = frozenFrame ?? lastFrame
-  } else {
-    // Sample fresh audio. Float data keeps full resolution — the old byte-based
-    // sampling quantised quiet signals to a handful of levels, which made clean
-    // waves look noisy and stepped.
-    dataArray = new Float32Array(analyser.fftSize)
-    analyser.getFloatTimeDomainData(dataArray)
-    lastFrame = dataArray
-
-    // Track the strongest recent frame so Freeze can show the wave at its
-    // fullest swing rather than whatever was on screen at click time.
-    let min = Infinity
-    let max = -Infinity
-    for (let i = 0; i < dataArray.length; i++) {
-      const sample = dataArray[i]
-      if (sample < min) min = sample
-      if (sample > max) max = sample
-    }
-    const peak = max - min
-    bestPeak *= BEST_PEAK_DECAY
-    if (peak >= bestPeak) {
-      bestPeak = peak
-      bestFrame = dataArray.slice()
-    }
+  // Track the strongest recent frame so Freeze shows the wave at its fullest
+  // swing rather than whatever was on screen at click time.
+  let min = Infinity
+  let max = -Infinity
+  for (let i = 0; i < live.length; i++) {
+    const sample = live[i]
+    if (sample < min) min = sample
+    if (sample > max) max = sample
+  }
+  const peak = max - min
+  bestPeak *= BEST_PEAK_DECAY
+  if (peak >= bestPeak) {
+    bestPeak = peak
+    bestFrame = live.slice()
   }
 
-  render(dataArray)
+  // Hold: while frozen, display the captured frame instead of the live one.
+  render(frozen.value ? frozenFrame ?? live : live)
   animationId = requestAnimationFrame(draw)
 }
 
@@ -244,12 +307,26 @@ onMounted(() => {
 onBeforeUnmount(() => {
   stopDrawing()
   resizeObserver?.disconnect()
+  clearTimeout(recaptureTimer)
 })
 </script>
 
 <template>
   <div class="oscilloscope">
     <canvas ref="canvas" class="oscilloscope-canvas" width="280" height="120" />
+    <div class="oscilloscope-sources" role="group" aria-label="Oscilloscope signal source">
+      <button
+        v-for="source in scopeSources"
+        :key="source.value"
+        type="button"
+        class="oscilloscope-source"
+        :class="{ 'is-active': scopeSource === source.value }"
+        :aria-pressed="scopeSource === source.value"
+        @click="scopeSource = source.value"
+      >
+        {{ source.label }}
+      </button>
+    </div>
     <p class="oscilloscope-label">Oscilloscope</p>
     <div class="oscilloscope-controls">
       <div class="oscilloscope-control">
@@ -323,6 +400,26 @@ onBeforeUnmount(() => {
 .oscilloscope-label {
   font-size: 12px;
   color: var(--color-heading);
+}
+
+.oscilloscope-sources {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.oscilloscope-source {
+  font-size: 12px;
+  color: var(--color-text);
+  background: var(--black-soft);
+  border: 2px solid var(--grey-soft);
+  border-radius: 4px;
+  padding: 0.25rem 0.75rem;
+  cursor: pointer;
+
+  &.is-active {
+    color: var(--color-heading);
+    border-color: var(--blue);
+  }
 }
 
 .oscilloscope-controls {

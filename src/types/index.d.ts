@@ -35,6 +35,7 @@ export type UseSequancerParams = {
     vcoTapNode: Ref<GainNode | null>,
     tremoloNode: Ref<GainNode | null>,
     voiceOscillator: Ref<OscillatorNode | null>,
+    physicalVoiceNode: Ref<AudioWorkletNode | null>,
     filterEnabled: Ref<boolean>,
     filterEnvelopeEnabled: Ref<boolean>,
     filterEnvelope: FilterEnvelopeObject,
@@ -45,10 +46,16 @@ export type UseSequancerParams = {
     quantize: Ref<Boolean>
 }
 
+// How the VCO produces sound: a classic waveform oscillator, or a physically
+// modeled plucked-string voice (Karplus-Strong, in an AudioWorklet).
+export type VoiceEngine = 'oscillator' | 'voice'
+
 export type OscillatorSettings = {
     type: OscillatorType,
     baseFrequency: number,
-    pulseWidth: number // Duty cycle for square waves (0.05 to 0.95, 0.5 = symmetric)
+    pulseWidth: number, // Duty cycle for square waves (0.05 to 0.95, 0.5 = symmetric)
+    engine: VoiceEngine,
+    damping: number // Voice engine string damping (0 = bright/long ring, 1 = dark/fast decay)
 }
 
 export type FilterSettings = {

@@ -6,8 +6,10 @@ import type { MusicalKey, Octaves } from "@/types"
 import DCheckbox from "./DCheckbox.vue";
 
 // Use the shared AudioContext and GainNode
-const { oscillatorSettings, selectedMusicalKey, selectedOctave, quantize, calculateFrequency, applyPulseWidth } = useAudioContext();
+const { oscillatorSettings, selectedMusicalKey, selectedOctave, quantize, calculateFrequency, applyPulseWidth, applyVoiceSettings } = useAudioContext();
 
+// 'oscillator' = classic waveforms, 'voice' = physical modeling (plucked string)
+const engines = ["oscillator", "voice"];
 const waves = ["sawtooth", "sine", "square", "triangle"];
 const keys = [ "A", "A#", "B", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#"]
 const octaves = [1, 2, 3, 4, 5, 6, 7]
@@ -29,6 +31,9 @@ watch(type, (newTypeValue: OscillatorType) => {
 
 // Push pulse-width changes onto the live comparator (no-op until activated).
 watch(() => oscillatorSettings.value.pulseWidth, () => applyPulseWidth());
+
+// Push damping changes onto the live physical voice (no-op until activated).
+watch(() => oscillatorSettings.value.damping, () => applyVoiceSettings());
 
 watch(selectedMusicalKey, (newSelectedMusicalKey: MusicalKey) => {
   if(selectedMusicalKey.value) {
@@ -52,6 +57,13 @@ watch(selectedOctave, (newSelectedOctave: Octaves) => {
     <div class="web-vco">
       <h2 class="web-vco-title">VCO - Voltage Controlled Oscillator</h2>
       <div>
+        <label for="engine-select">Engine:</label>
+        <select v-model="oscillatorSettings.engine" name="engines" id="engine-select">
+          <option v-for="engine in engines" :key="engine" :value="engine">{{ engine }}</option>
+        </select>
+      </div>
+
+      <div v-if="oscillatorSettings.engine === 'oscillator'">
         <label for="wave-select">Wave:</label>
         <select v-model="type" name="waves" id="wave-select">
           <option v-for="wave in waves" :key="wave" :value="wave">{{ wave }}</option>
@@ -79,7 +91,7 @@ watch(selectedOctave, (newSelectedOctave: Octaves) => {
 
 
 
-      <div class="web-vco-freq" v-if="type === 'square'">
+      <div class="web-vco-freq" v-if="oscillatorSettings.engine === 'oscillator' && type === 'square'">
         <DSlider
           type="range"
           :min="0.05"
@@ -90,6 +102,19 @@ watch(selectedOctave, (newSelectedOctave: Octaves) => {
           v-model="oscillatorSettings.pulseWidth"
         />
         <p>Pulse Width: {{ Math.round(oscillatorSettings.pulseWidth * 100) }}%</p>
+      </div>
+
+      <div class="web-vco-freq" v-if="oscillatorSettings.engine === 'voice'">
+        <DSlider
+          type="range"
+          :min="0"
+          :max="1"
+          step="0.01"
+          id="damping"
+          aria-label="Damping"
+          v-model="oscillatorSettings.damping"
+        />
+        <p>Damping: {{ Math.round(oscillatorSettings.damping * 100) }}% (low = bright ring, high = muted pluck)</p>
       </div>
 
       <div class="web-vco-freq" :class="{ 'is-disabled': quantize }">

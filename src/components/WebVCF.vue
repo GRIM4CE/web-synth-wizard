@@ -5,23 +5,39 @@ import DSlider from './DSlider.vue'
 import DCheckbox from './DCheckbox.vue'
 
 // Retrieve the shared AudioContext and gain node from a composable
-const { filterNode, filterSettings, filterEnvelope, filterEnabled, filterEnvelopeEnabled } = useAudioContext();
+const { filterNode, filterSettings, filterEnvelope, filterEnabled, filterEnvelopeEnabled, oscillatorSettings } = useAudioContext();
 
 // Reactive filter parameters
 const filterTypes: BiquadFilterType[] = ["lowpass", 'highpass', 'bandpass', 'notch']
 
 // Cutoff slider is logarithmic: audible cutoff changes are multiplicative (octaves),
 // so a linear 20-20000 slider crams everything that matters into its bottom tenth.
-const minFrequency = 20
+// The floor tracks the voice's fundamental rather than sitting at sub-audio 20Hz:
+// with the cutoff on the note itself, the bottom of the travel reduces a square
+// to its fundamental (a sine) instead of silencing the whole signal.
+const minFrequency = computed(() =>
+  Math.min(Math.max(Math.round(oscillatorSettings.value.baseFrequency), 40), 5000)
+)
 const maxFrequency = 20000
 const frequencyPosition = computed({
-  get: () =>
-    Math.log(filterEnvelope.envelope.value.frequency / minFrequency) /
-    Math.log(maxFrequency / minFrequency),
+  get: () => {
+    const position =
+      Math.log(filterEnvelope.envelope.value.frequency / minFrequency.value) /
+      Math.log(maxFrequency / minFrequency.value)
+    return Math.min(Math.max(position, 0), 1)
+  },
   set: (position) => {
     filterEnvelope.envelope.value.frequency = Math.round(
-      minFrequency * Math.pow(maxFrequency / minFrequency, position)
+      minFrequency.value * Math.pow(maxFrequency / minFrequency.value, position)
     )
+  }
+})
+
+// Changing key/octave can move the floor above the stored cutoff; pull the
+// cutoff up with it so the sound matches what the slider shows.
+watch(minFrequency, (newMinFrequency) => {
+  if (filterEnvelope.envelope.value.frequency < newMinFrequency) {
+    filterEnvelope.envelope.value.frequency = newMinFrequency
   }
 })
 

@@ -31,7 +31,7 @@ environments — all with minimal configuration.
 3. Select **GitHub** and authorize access to `grim4ce/web-synth-wizard`
 4. Select the `main` branch
 5. Amplify will auto-detect the `amplify.yml` build spec — verify the settings:
-   - Build command: `npm run build`
+   - Build command: `npm run build-only` (see [Build Cost Optimization](#build-cost-optimization))
    - Output directory: `dist`
 6. Click **Save and deploy**
 
@@ -78,6 +78,52 @@ push and PR to `main`:
 4. Build verification
 
 This runs independently of Amplify's build and catches issues early in PRs.
+
+## Build Cost Optimization
+
+Amplify bills per build minute (`$0.01/min` after the free tier), so the
+`amplify.yml` build is trimmed to only what produces the deployed artifact:
+
+- **Deploy build runs `npm run build-only` (Vite only), not `npm run build`.**
+  Type-checking (`vue-tsc`) is a correctness gate, not a build artifact —
+  Vite/esbuild transpiles TypeScript without type-checking, so the emitted
+  bundle is identical either way. Type errors are already caught by GitHub
+  Actions CI on every push and PR, making a second `vue-tsc` run on each
+  Amplify deploy redundant. Removing it cuts the build phase by ~65%.
+- **`npm ci` runs with `--prefer-offline --no-audit --no-fund`** and a
+  project-local npm cache (`.npm/`) that is persisted via Amplify's `cache`
+  block alongside `node_modules`, so dependency installs resolve from cache
+  instead of re-downloading from the registry.
+- **Vite's gzip-size report is disabled** (`build.reportCompressedSize: false`
+  in `vite.config.ts`) — it is build-time-only diagnostics with no effect on
+  the emitted bundle.
+
+Once the per-build work is this small, the dominant cost driver is the *number*
+of builds, not the duration of each. The levers below live in the Amplify
+console/API (they cannot be set in `amplify.yml`) and are where the remaining
+savings are:
+
+- **Skip builds for doc-only changes.** In the Amplify console under
+  **App settings → Build settings → Ignore build settings**, add a command that
+  cancels the build when a push touches only Markdown files. Amplify skips the
+  build when the command exits `0` and proceeds when it exits non-zero:
+
+  ```bash
+  git rev-parse HEAD^ >/dev/null 2>&1 && git diff --quiet HEAD^ HEAD -- ':(exclude)*.md' || exit 1
+  ```
+
+  This runs *before* install, so a docs-only push (e.g. editing this file)
+  costs zero build minutes and leaves the previous deploy live.
+- **Review PR preview and branch auto-builds.** Preview builds fire on every
+  push to every open PR and are typically the largest slice of the bill.
+  Under **Hosting → Previews**, disable them or scope them to specific
+  branches, and confirm auto-build is enabled only for `main`.
+- **Right-size the build instance.** The default Amplify compute class is
+  larger than a static Vue SPA needs; a smaller instance lowers the per-minute
+  rate (**App settings → Build settings**).
+- **Batch pushes to `main`.** Amplify builds once per push regardless of commit
+  count, so squash-merging PRs instead of pushing many small commits directly
+  reduces the total number of builds.
 
 ## Caching Strategy
 

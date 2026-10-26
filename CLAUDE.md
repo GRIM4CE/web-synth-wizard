@@ -30,7 +30,9 @@ npm run format       # Prettier formatting
 ### Audio Graph
 
 ```
-OscillatorNode → GainNode (VCA) → BiquadFilterNode (VCF) → AudioContext.destination
+OscillatorNode (VCO 1, + optional detuned VCO 2/3) → GainNode (VCA) → tremolo →
+BiquadFilterNode (VCF) → FX chain (delay / reverb / compressor, user-orderable) →
+master out → AudioContext.destination
 ```
 
 ### Key Directories
@@ -40,7 +42,9 @@ OscillatorNode → GainNode (VCA) → BiquadFilterNode (VCF) → AudioContext.de
   - `useAudioContextManager.ts` — AudioContext, GainNode, FilterNode initialization and shared state
   - `useSequencer.ts` — 16-step sequencer with setTimeout-based scheduling
   - `useVCO.ts` — Oscillator creation and note quantization
+  - `usePhysicalVoice.ts` — physical modeling AudioWorklet, the VCO's "voice" engine: three Rings-style resonator models (inharmonic Karplus-Strong string, sympathetic strings, modal filter bank)
   - `useEnvelope.ts` — ADSR envelope generators for VCA and VCF
+  - `useRecorder.ts` — WAV export: AudioWorklet tap on the master output, encoded via `src/utils/wavEncoder.ts`
 - `src/components/` — Vue components for each synth module
 - `src/types/` — TypeScript type definitions
 - `src/utils/` — Musical note config and helper functions
